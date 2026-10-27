@@ -1,0 +1,2306 @@
+---
+title: 
+author: 
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: false
+    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+    toc: false
+    number_sections: false
+    dev: cairo_pdf
+geometry: left=3cm, right=2cm, top=2cm, bottom=2cm
+mainfont: Times New Roman
+fontsize: 13pt
+header-includes:
+- \usepackage{fancyhdr}
+- \usepackage{xcolor}
+- \usepackage{graphicx}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+\begin{titlepage}
+    \centering
+    
+    % --- PHẦN TÊN TRƯỜNG ---
+    % Sử dụng \MakeUppercase để tự động viết hoa
+    \textbf{\large \MakeUppercase{Đại học Quốc gia TP. Hồ Chí Minh}} \\
+    \textbf{\large \MakeUppercase{Trường Đại học Khoa học Tự nhiên}} \\
+    
+    \vspace{1.5cm}
+    
+    % --- PHẦN LOGO ---
+    % YÊU CẦU: File 'logo.png' phải nằm cùng thư mục với file .Rmd này
+    % Điều chỉnh width để thay đổi độ to nhỏ của logo
+    \includegraphics[width=6cm]{khtn.png}
+    
+    \vspace{1.5cm}
+    
+    % --- PHẦN TÊN ĐỀ TÀI ---
+    % Sử dụng fontsize tùy chỉnh để chữ to và đậm hơn
+    \textbf{\fontsize{24pt}{28pt}\selectfont \MakeUppercase{Mô hình thống kê tuyến tính}} \\
+    \vspace{0.8cm}
+    \textbf{\fontsize{20pt}{24pt}\selectfont \MakeUppercase{Đồ án cuối kì}} \\
+    
+    \vspace{3cm}
+    
+    % --- PHẦN THÔNG TIN (CẢI TIẾN DÙNG MINIPAGE) ---
+    % Tạo một "trang nhỏ" (minipage) rộng bằng 65% trang chính.
+    % Khối minipage này sẽ nằm giữa trang, nhưng nội dung bên trong sẽ canh trái.
+    \begin{minipage}{0.65\textwidth}
+        \flushleft % Bắt buộc nội dung bên trong canh trái
+        \large % Tăng cỡ chữ phần này lên một chút
+        GIẢNG VIÊN: \\
+        \textbf{TS. NGUYỄN THỊ MỘNG NGỌC} \\
+        
+        \vspace{1.5cm} % Khoảng cách giữa GV và Nhóm
+        
+        NHÓM THỰC HIỆN: \\ % Thêm chữ "THỰC HIỆN" cho giống ảnh 2
+        \textbf{23110028 - NGUYỄN TRỌNG PHÚ} \\
+        \textbf{23110015 - NGUYỄN TRỌNG HÙNG} \\
+        \textbf{23110141 - LÊ SƠN ĐÔNG} \\
+        \textbf{22110224 - ĐẶNG KHÁNH VY}
+    \end{minipage}
+    
+    \vfill
+    
+    % --- NGÀY THÁNG ---
+    \textbf{TP. Hồ Chí Minh - 1/2026}
+\end{titlepage}
+\newpage
+\pagenumbering{roman}
+\renewcommand{\contentsname}{Mục lục}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancyhead[L]{\textcolor{black}{Mô hình thống kê tuyến tính}}
+\fancyhead[R]{Trang \thepage}
+\fancyfoot[R]{\fontsize{8pt}{10pt}\selectfont Trường Đại học Khoa học tự nhiên - ĐHQG-TPHCM\\Bộ môn Xác suất Thống kê, Khoa Toán - Tin học}
+
+**Download All Packages Needed**
+
+```{r include=FALSE}
+#Đọc và tiền xử lý
+knitr::opts_chunk$set(
+  fig.width = 3.8,
+  fig.height = 2.8,
+  fig.align = "center",
+  out.width = "65%"
+)
+knitr::opts_chunk$set(echo = FALSE,
+  message = FALSE,
+  warning = FALSE)
+library(gridExtra)
+library(ggplot2)
+library(corrplot)
+library(multcomp)
+library(Publish)
+library(car)
+library(tidyverse)
+library(tidyr)
+library(corrplot)
+library(psych)
+library(lubridate)
+library(multcomp)
+library(nortest)
+library(moments)
+library(knitr)
+library(olsrr)
+library(glmnet)
+library(ridge)
+library(MPV)
+library(tibble)
+library(formattable)
+library(dplyr)
+library(readr)
+library(naniar)
+library(MASS)
+library(mice)
+library(caret)
+library(lmtest)
+library(sandwich)
+library(kableExtra)
+library(quantreg)
+library(splines)
+library(RColorBrewer)
+library(patchwork)
+library(Metrics)
+```
+
+# GIỚI THIỆU
+
+Báo cáo này sử dụng dữ liệu từ tệp **"StudentPerformanceFactors.csv"**
+để phân tích các yếu tố ảnh hưởng đến kết quả thi của học sinh. Bộ dữ
+liệu cung cấp cái nhìn đa chiều về thói quen học tập, nền tảng gia đình
+và các điều kiện môi trường xung quanh.
+
+**Tổng quan nghiên cứu:** Nghiên cứu này phân tích bộ dữ liệu 6,607 học
+sinh nhằm xác định các yếu tố ảnh hưởng đến điểm thi cuối kỳ, bao gồm
+thói quen học tập, môi trường gia đình và đặc điểm cá nhân. Sau bước
+tiền xử lý (loại bỏ dữ liệu thiếu, xử lý ngoại lai và chuyển đổi dữ
+liệu), chúng tôi tiến hành khảo sát thống kê mô tả và tương quan để hiểu
+rõ cấu trúc dữ liệu. Nghiên cứu tập trung vào việc xây dựng và so sánh
+các mô hình hồi quy để tìm ra mô hình tối ưu cho cả mục tiêu giải thích
+và dự báo.
+
+Bộ dữ liệu gồm 20 biến:
+
+1.  **Hours_Studied**: Số giờ học mỗi tuần
+
+2.  **Attendance**: số buổi đi học
+
+3.  **Parental_Involvement**: Mức độ cha mẹ tham gia vào việc học của
+    con (Low/Medium/High).
+
+4.  **Access_to_Resources**: Mức độ tiếp cận tài liệu học tập
+    (Low/Medium/High).
+
+5.  **Extracurricular_Activities**: Tham gia hoạt động ngoại khoá
+    (Yes/No).
+
+6.  **Sleep_Hours**: Số giờ ngủ trung bình mỗi đêm.
+
+7.  **Previous_Scores**: Điểm của các kỳ kiểm tra trước đó.
+
+8.  **Motivation_Level**: Mức độ động lực học tập.
+
+9.  **Internet_Access**: Có Internet hay không (Yes/No).
+
+10. **Tutoring_Sessions**: Số buổi học thêm mỗi tháng.
+
+11. **Family_Income**: Thu nhập gia đình (Low/Medium/High).
+
+12. **Teacher_Quality**: Chất lượng giáo viên (Low/Medium/High).
+
+13. **School_Type**: Loại trường theo học (Public/Private).
+
+14. **Peer_Influence**: Ảnh hưởng của bạn bè
+    (Positive/Neutral/Negative).
+
+15. **Physical_Activity**: Số giờ vận động thể lực mỗi tuần.
+
+16. **Learning_Disabilities**: Có rối loạn học tập hay không (Yes/No).
+
+17. **Parental_Education_Level**:Trình độ học vấn cao nhất của cha mẹ
+    (High School / College / Postgraduate).
+
+18. **Distance_from_Home**: Khoảng cách từ nhà đến trường (Near /
+    Moderate / Far).
+
+19. **Gender**: Giới tính (Male/Female).
+
+20. **Exam_Score**: Điểm thi cuối kỳ.
+
+# 1.Nhập và khảo sát dữ liệu ban đầu
+
+Đầu tiên, chúng ta cần tải dữ liệu từ tệp csv. Đồng thời, chúng ta xem
+qua cấu trúc tổng quan của nó.
+
+```{r}
+df <- read.csv("StudentPerformanceFactors.csv", header = TRUE, sep = ",", na.strings = c("", " ", "NA"))
+#Chuyển tibble -> data.frame
+df <- as.data.frame(df)
+str(df)
+
+```
+
+**Giải thích tổng quan**
+
+Dữ liệu gồm 6607 quan trắc và 20 biến đã được giải thích kỹ khi giới
+thiệu dữ liệu.
+
+Dữ liệu gồm 7 biến rời rạc và 13 biến định dạng char. Vì vậy, để có thể
+xây dựng mô hình hồi quy tuyến tính giữa các biến cần chuyển các biến
+char thành các biến định tính, sau đó chuyển thành **factor**.
+
+```{r}
+
+# Chuyển biến character về factor
+char <- c("Gender", "Internet_Access", "Learning_Disabilities", "Extracurricular_Activities", "Parental_Involvement", "Access_to_Resources", "Motivation_Level","Family_Income", "Teacher_Quality", "School_Type", "Peer_Influence","Parental_Education_Level", "Distance_from_Home")
+
+for(col in char) {
+  df[[col]] <- as.factor(df[[col]])
+}
+
+```
+
+# 2. Tiền xử lí:
+
+## 2.1.Missing Data
+
+Đầu tiên, ta kiểm tra xem dữ liệu ban đầu có tồn tại dữ liệu khuyết hay
+không.
+
+```{r}
+
+
+miss_var_summary(df) %>%
+  dplyr::filter(n_miss > 0) %>%
+  dplyr::mutate(
+    value = paste0(
+      as.integer(n_miss),
+      " (",
+      round(as.numeric(pct_miss), 2),
+      "%)"
+    )
+  ) %>%
+  dplyr::select(variable, value) %>%
+  tidyr::pivot_wider(
+    names_from = variable,
+    values_from = value
+  ) %>%
+  knitr::kable(
+    caption = "Số lượng và tỷ lệ missing theo biến"
+  )
+
+```
+
+**Kết quả và nhận xét:**
+
+\- Gía trị thiếu chỉ chiếm khoảng 1-1.4% tùy từng biến . Từ đó, có thể
+thấy bộ dữ liệu nhìn chung rất sạch, tỷ lệ thiếu cực kỳ nhỏ. Dữ liệu
+thiếu có thể thuộc loại MCAR - vì thường do lỗi nhập dữ liệu chứ không
+phụ thuộc vào bản thân giá trị đó.
+
+\- Tỷ lệ các biến bị khuyết thấp nên không ảnh hưởng đáng kể đến mô hình
+hồi quy có thể sử dụng lệnh **na.omit()** để loại bỏ hàng chứa NA.
+
+```{r}
+df_nomiss <- na.omit(df)
+dim(df_nomiss)
+```
+
+Sau khi loại bỏ dữ liệu khuyết chúng em còn lại 6378 quan trắc.
+
+## 2.2. Giá trị ngoại lai.
+
+Nhận xét 20 biến, ta có:
+
+\- Biến đặc trưng định lượng: *Hours_Studied*, *Attendance*,
+*Sleep_Hours*,*Previous_Scores*, *Exam_score*, và *Physical_Activity,
+Tutoring_Sessions* .
+
+\- Biến phân loại, rời rạc $\to$ Không cần xét ngoại lai.
+
+Chúng ta sẽ sử dụng phương pháp IQR, dựa trên tứ phân vị Q1,Q3 để kiểm
+tra ngoại lai.
+
+```{r}
+check_outliers_summary <- function(df, cols) {
+  result <- data.frame(
+    Variable = character(),
+    Outlier_Count = integer(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (col in cols) {
+    if (!is.numeric(df[[col]])) next
+    
+    Q1 <- quantile(df[[col]], 0.25, na.rm = TRUE)
+    Q3 <- quantile(df[[col]], 0.75, na.rm = TRUE)
+    IQR_value <- Q3 - Q1
+    
+    lower <- Q1 - 1.5 * IQR_value
+    upper <- Q3 + 1.5 * IQR_value
+    
+    n_outliers <- sum(df[[col]] < lower | df[[col]] > upper, na.rm = TRUE)
+    
+    result <- rbind(
+      result,
+      data.frame(Variable = col, Outlier_Count = n_outliers)
+    )
+  }
+  
+  return(result)
+}
+
+cols_to_check <- c("Hours_Studied", "Attendance", "Sleep_Hours", "Exam_Score","Previous_Scores", "Physical_Activity", "Tutoring_Sessions")
+outlier_table <- check_outliers_summary(df, cols_to_check)
+
+outlier_table %>%
+  filter(Outlier_Count > 0)
+
+```
+
+Đối với các giá trị ngoại lai của biến `Hours_Studied`, thay vì loại bỏ
+gây mất mát dữ liệu, chúng tôi áp dụng kỹ thuật **Capping tại mức 5%**
+(Winsorization). Phương pháp này giúp điều chỉnh các giá trị cực đoan về
+ngưỡng an toàn, từ đó gia tăng tính ổn định cho mô hình hồi quy mà không
+làm thay đổi kích thước mẫu.
+
+Biến `Tutoring_Sessions` xuất hiện các điểm ngoại lai về mặt thống kê,
+nhưng xét trên bản chất đây là biến rời rạc với phạm vi giá trị hẹp (từ
+0 đến 8 buổi). Các giá trị này hoàn toàn nằm trong thực tế học tập, nên
+sẽ **giữ nguyên dữ liệu gốc** để phản ánh đúng tác động của việc học phụ
+đạo lên kết quả thi.
+
+Vì `Exam_Score` là biến mục tiêu, chúng tôi thực hiện
+**Log-transformation** để xử lý các giá trị ngoại lai. Kỹ thuật này
+không chỉ làm giảm ảnh hưởng của các điểm dị biệt mà còn giúp phân phối
+của biến mục tiêu tiến gần hơn đến phân phối chuẩn, nhằm thỏa mãn giả
+định quan trọng của mô hình hồi quy tuyến tính.
+
+```{r}
+df <- df_nomiss
+#Xử lí Hours_Studies
+upper <- quantile(df$Hours_Studied, 0.95)
+lower <- quantile(df$Hours_Studied, 0.05)
+df$Hours_Studied <- pmin(pmax(df$Hours_Studied, lower), upper)
+df$Exam_Score_log <- log(df$Exam_Score)
+```
+
+# 3.Thống kê mô tả:
+
+## 3.1. Histogram:
+
+### **3.1.1. Nhóm chỉ số học tập trực tiếp:**
+
+```{r echo=FALSE, fig.align='center', fig.width=8, fig.height=3.5, out.width="80%", crop=TRUE}
+vars <- c("Hours_Studied", "Attendance", "Previous_Scores")
+
+par(
+  mfrow = c(1, 3),
+  mar = c(4, 4, 2, 1),
+  mgp = c(2, 0.7, 0)
+)
+
+for (v in vars) {
+  x <- df[[v]]
+  
+  # Ép numeric nếu cần
+  if (!is.numeric(x)) {
+    x <- as.numeric(as.character(x))
+  }
+  
+  hist(
+    x,
+    freq = FALSE,
+    col = "lightblue",
+    border = "white",
+    main = paste("Histogram of", v),
+    xlab = v
+  )
+  
+}
+
+par(mfrow = c(1, 1))
+
+```
+
+Dựa vào biểu đồ Histogram ta có thể thấy:
+
+-   **Hours_Studied:** Phân phối tập trung mạnh ở ngưỡng trung bình cao
+    (15–20 giờ). Mật độ giảm dần về hai phía, đặc biệt là phía bên trái
+    (nhóm học ít giờ), tạo nên một phân phối hơi lệch trái.
+
+-   **Attendance (Chuyên cần):** Dữ liệu có dạng phân phối đều
+    (Uniform), các mức độ chuyên cần từ 60 đến 100 xuất hiện với tần
+    suất xấp xỉ nhau, ngoại trừ một sự gia tăng nhẹ ở ngưỡng tối thiểu
+    (60). Điều này cho thấy dữ liệu không bị tập trung vào một nhóm cụ
+    thể nào mà rải đều trên mọi mức độ chuyên cần, cho thấy mẫu dữ liệu
+    có tính đại diện cao, bao phủ từ nhóm học sinh yếu đến nhóm x
+
+-   **Previous_Scores (Điểm số trước đó):** Tương tự như chuyên cần,
+    điểm số cũ của học sinh phân bổ khá đồng đều từ mức 50 đến 100 điểm,
+    cho thấy phổ điểm đầu vào của nhóm học sinh này rất rộng.
+
+**Kết luận:**
+
+-   **Sự đa dạng của mẫu:** Việc các biến như `Attendance` và
+    `Previous_Scores` có phân phối đều là một tín hiệu tốt cho phân tích
+    thống kê. Nó đảm bảo rằng các kết quả suy diễn sau này sẽ không bị
+    thiên kiến (bias) bởi một nhóm đối tượng ưu tú hay yếu kém nào đó.
+
+-   **Biến số "Nỗ lực" là trọng tâm:** Trong khi `Previous_Scores` và
+    `Attendance` dàn trải đều, thì nỗ lực thời gian `Hours_Studied` lại
+    có sự hội tụ mạnh quanh mức 20 giờ. Đây có thể là "ngưỡng nỗ lực
+    tiêu chuẩn" mà hệ thống giáo dục này kỳ vọng ở học sinh.
+
+### **3.1.2.Nhóm biến thói quen sinh hoạt và hỗ trợ học tập:**
+
+Đây là các biến định lượng rời rạc có phạm vi gía trị hẹp:
+
+```{r echo=FALSE, fig.align='center', fig.width=8, fig.height=3.5, out.width="80%", crop=TRUE}
+vars <- c("Physical_Activity", "Tutoring_Sessions","Sleep_Hours")
+
+par(
+  mfrow = c(1, 3),
+  mar = c(4, 4, 2, 1),
+  mgp = c(2, 0.7, 0)
+)
+
+for (v in vars) {
+  x <- df[[v]]
+  
+  # Ép numeric nếu cần
+  if (!is.numeric(x)) {
+    x <- as.numeric(as.character(x))
+  }
+  
+  hist(
+    x,
+    freq = FALSE,
+    col = "lightblue",
+    border = "white",
+    main = paste("Histogram of", v),
+    xlab = v
+  )
+  
+}
+
+par(mfrow = c(1, 1))
+
+```
+
+**Nhận xét từng biến:**
+
+-   **Physical_Activity:** Phân phối có dạng hình chuông rõ rệt với đỉnh
+    nằm ở mức 3 giờ mỗi tuần. Các cột biểu đồ thưa và tách biệt cho thấy
+    đây là biến số nguyên rời rạc. Việc phân phối chuẩn này có thể loại
+    bỏ nhiễu khi xét mối tương quan giữa sức khỏe thể chất và kết quả
+    học tập (nhiễu từ các giá trị cực đoan).
+
+<!-- -->
+
+-   **Tutoring_Sessions:** Đây là phân phối **lệch phải**. Đỉnh nằm ở
+    mức 1-2 buổi và thấp dần khi số buổi tăng lên. Ít học sinh tham gia
+    trên 4 buổi phụ đạo.
+
+-   **Sleep_Hours:** Biểu đồ dạng hình chuông đối xứng, đỉnh cao nhất
+    tại mốc 7 giờ cho thấy đây là giá trị đại diện (Mean/Median/Mode)
+    cực kỳ rõ ràng. Sự tập trung này cho thấy biến này có độ biến thiên
+    thấp, ít có trường hợp cực đoan (quá lớn hoặc nhỏ).
+
+**Kết luận:**
+
+-   **Tính chất dữ liệu:** Đây là nhóm **biến rời rạc ít giá trị
+    (Discrete variables)**. Sự tập trung mật độ vào một vài giá trị cụ
+    thể (như 7 giờ ngủ, 3 giờ thể dục) cho thấy các hành vi sinh hoạt
+    của học sinh khá đồng nhất.
+
+-   **Vai trò của sự cân bằng:** Kết quả cho thấy học sinh trong mẫu
+    không đi theo xu hướng "nhồi nhét". Thay vì dành quá nhiều thời gian
+    cho các buổi học phụ đạo (`Tutoring_Sessions` thấp), học sinh ưu
+    tiên việc duy trì sức khỏe thể chất và giấc ngủ ở mức hợp lý.
+
+-   Do các giá trị tập trung quá dày đặc vào một vài ngưỡng (ít biến
+    thiên), các biến này có thể sẽ không tạo ra những tác động dẫn đến
+    điểm số thay đổi quá lớn, nhưng chúng đóng vai trò là "nền tảng sức
+    khỏe" ổn định để học sinh phát huy tối đa khả năng trong nhóm chỉ số
+    học tập trực tiếp.
+
+### **3.1.3. Biến mục tiêu gốc và sau khi log_transform:**
+
+```{r echo=FALSE, fig.align='center', fig.width=10, fig.height=4, out.width="100%", fig.show='hold'}
+vars <- c("Exam_Score","Exam_Score_log")
+
+par(
+  mfrow = c(1, 3),
+  mar = c(4, 4, 2, 1),
+  mgp = c(2, 0.7, 0)
+)
+
+for (v in vars) {
+  x <- df[[v]]
+  
+  # Ép numeric nếu cần
+  if (!is.numeric(x)) {
+    x <- as.numeric(as.character(x))
+  }
+  
+  hist(
+    x,
+    freq = FALSE,
+    col = "lightblue",
+    border = "white",
+    main = paste("Histogram of", v),
+    xlab = v
+  )
+  
+}
+
+par(mfrow = c(1, 1))
+```
+
+-   **Exam_Score:** Ở biến gốc ta thấy dữ liệu tập trung chủ yếu trong
+    khoảng từ 60 đến 75 điểm. Có dạng phân phối khá hẹp, tập trung mạnh
+    ở một vài cột trung tâm (đặc biệt là cột gần mức 70). Dữ liệu gốc
+    hơi lệch phải, khiến các giá trị ở biên (dưới 60 hoặc trên 80) xuất
+    hiện rất ít.
+
+-   **Exam_Score_log (Điểm thi):** Sau khi thực hiện biến đổi log, biến
+    mục tiêu đã chuyển dịch sang dạng phân phối đối xứng và tập trung
+    mật độ rất cao quanh giá trị trung bình ($\approx 4.2$). Mặc dù biểu
+    đồ có độ nhọn cao, cho thấy sự đồng nhất lớn trong kết quả học tập
+    của học sinh, nhưng dải dữ liệu đã được trải phẳng hơn so với biến
+    gốc. Phân phối này đã loại bỏ đáng kể độ lệch phải của dữ liệu ban
+    đầu, tiến sát đến phân phối chuẩn và tạo điều kiện thuận lợi để các
+    mô hình hồi quy ước lượng chính xác hơn các tác động biên của các
+    biến độc lập.
+
+**Kết luận:** Phân tích Histogram cho thấy sự tương phản rõ rệt: trong
+khi các yếu tố đầu vào (Nhóm học tập) có sự phân tán rộng, thì các yếu
+tố sinh hoạt và biến mục tiêu lại có sự tập trung cao độ. Mặc dù biến
+đổi Log giúp ổn định phương sai và đưa dữ liệu về gần phân phối chuẩn
+hơn, nhưng việc dữ liệu bị nén quá mức (độ nhọn cao) đòi hỏi mô hình dự
+báo phải có độ nhạy rất lớn để phân biệt các sai số nhỏ trên thang đo
+logarit.
+
+## 3.2. Độ đo trung tâm và sự biến thiên phân tán các biến định lượng.
+
+Bảng sau thể hiện các thống kê mô tả định lượng của bộ dữ liệu sau khi
+xử lí ngoại lai:
+
+```{r}
+desc_stats <- data.frame(
+  Variable = c(
+    "Hours_Studied", "Attendance", "Sleep_Hours",
+    "Previous_Scores", "Exam_Score_log",
+    "Physical_Activity", "Tutoring_Sessions"
+  ),
+
+  Min = c(
+    min(df$Hours_Studied, na.rm = TRUE),
+    min(df$Attendance, na.rm = TRUE),
+    min(df$Sleep_Hours, na.rm = TRUE),
+    min(df$Previous_Scores, na.rm = TRUE),
+    min(df$Exam_Score_log, na.rm = TRUE),
+    min(df$Physical_Activity, na.rm = TRUE),
+    min(df$Tutoring_Sessions, na.rm = TRUE)
+  ),
+
+  Q1 = c(
+    quantile(df$Hours_Studied, 0.25, na.rm = TRUE),
+    quantile(df$Attendance, 0.25, na.rm = TRUE),
+    quantile(df$Sleep_Hours, 0.25, na.rm = TRUE),
+    quantile(df$Previous_Scores, 0.25, na.rm = TRUE),
+    quantile(df$Exam_Score_log, 0.25, na.rm = TRUE),
+    quantile(df$Physical_Activity, 0.25, na.rm = TRUE),
+    quantile(df$Tutoring_Sessions, 0.25, na.rm = TRUE)
+  ),
+
+  Mean = c(
+    mean(df$Hours_Studied, na.rm = TRUE),
+    mean(df$Attendance, na.rm = TRUE),
+    mean(df$Sleep_Hours, na.rm = TRUE),
+    mean(df$Previous_Scores, na.rm = TRUE),
+    mean(df$Exam_Score_log, na.rm = TRUE),
+    mean(df$Physical_Activity, na.rm = TRUE),
+    mean(df$Tutoring_Sessions, na.rm = TRUE)
+  ),
+
+  Median = c(
+    median(df$Hours_Studied, na.rm = TRUE),
+    median(df$Attendance, na.rm = TRUE),
+    median(df$Sleep_Hours, na.rm = TRUE),
+    median(df$Previous_Scores, na.rm = TRUE),
+    median(df$Exam_Score_log, na.rm = TRUE),
+    median(df$Physical_Activity, na.rm = TRUE),
+    median(df$Tutoring_Sessions, na.rm = TRUE)
+  ),
+
+  Q3 = c(
+    quantile(df$Hours_Studied, 0.75, na.rm = TRUE),
+    quantile(df$Attendance, 0.75, na.rm = TRUE),
+    quantile(df$Sleep_Hours, 0.75, na.rm = TRUE),
+    quantile(df$Previous_Scores, 0.75, na.rm = TRUE),
+    quantile(df$Exam_Score_log, 0.75, na.rm = TRUE),
+    quantile(df$Physical_Activity, 0.75, na.rm = TRUE),
+    quantile(df$Tutoring_Sessions, 0.75, na.rm = TRUE)
+  ),
+
+  Max = c(
+    max(df$Hours_Studied, na.rm = TRUE),
+    max(df$Attendance, na.rm = TRUE),
+    max(df$Sleep_Hours, na.rm = TRUE),
+    max(df$Previous_Scores, na.rm = TRUE),
+    max(df$Exam_Score_log, na.rm = TRUE),
+    max(df$Physical_Activity, na.rm = TRUE),
+    max(df$Tutoring_Sessions, na.rm = TRUE)
+  ),
+
+  SD = c(
+    sd(df$Hours_Studied, na.rm = TRUE),
+    sd(df$Attendance, na.rm = TRUE),
+    sd(df$Sleep_Hours, na.rm = TRUE),
+    sd(df$Previous_Scores, na.rm = TRUE),
+    sd(df$Exam_Score_log, na.rm = TRUE),
+    sd(df$Physical_Activity, na.rm = TRUE),
+    sd(df$Tutoring_Sessions, na.rm = TRUE)
+  )
+)
+
+desc_stats %>%
+  kable(
+    caption = "Bảng X. Thống kê mô tả các biến định lượng",
+    digits = 2,
+    align = "c",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(
+    full_width = FALSE,
+    position = "center"
+  )
+
+```
+
+**Hours_Studied:**
+
+-   **Trung tâm và phân phối:**\
+    Giá trị Mean (≈ 19.98) và Median (20) gần trùng nhau, cho thấy phân
+    phối số giờ học tương đối cân đối và gần với phân phối đối xứng. Giá
+    trị Mean (19.98) và Median (20) gần như trùng khớp hoàn toàn. Điều
+    này minh chứng cho một phân phối cực kỳ cân đối và gần sát với phân
+    phối chuẩn. Mức độ lệch trái là không đáng kể, cho thấy không có sự
+    mất cân bằng giữa nhóm học sinh học ít và học nhiều.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên của số giờ học khá rộng, từ 10 đến 30 (Range =
+    20), cho thấy sự khác biệt về thời lượng học tập giữa các học sinh.
+    Tuy nhiên, phần lớn quan sát tập trung quanh vùng trung tâm, hàm ý
+    rằng các giá trị rất thấp hoặc rất cao chỉ xuất hiện ở một số trường
+    hợp cá biệt và không chi phối phân phối tổng thể. Khoảng tứ phân vị
+    biến thiên là **8 (Q1: 16.0 - Q3: 24.0)** . Trong phạm vi 50% số học
+    sinh ở giữa, nỗ lực học tập có sự chênh lệch khá lớn (từ 16 đến 24
+    giờ/tuần), cho thấy thói quen học tập chưa thực sự đồng nhất.
+
+**Attendance:**
+
+-   **Trung tâm và phân phối:**\
+    Mean (≈ 80,02) và Median (80) gần bằng nhau, cho thấy phân phối biến
+    này tương đối cân đối. Việc hai chỉ số trung tâm gần trùng nhau cho
+    thấy dữ liệu không bị lệch đáng kể, đồng thời trung tâm phân phối
+    nằm rõ ràng ở mức chuyên cần cao.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên từ 60 đến 100 (Range = 40) phản ánh sự khác biệt
+    tương đối lớn về mức độ chuyên cần giữa các học sinh. Tuy nhiên,
+    phần lớn dữ liệu tập trung quanh giá trị trung tâm, cho thấy đa số
+    học sinh có mức chuyên cần ổn định, trong khi các mức rất thấp hoặc
+    rất cao chiếm tỷ lệ nhỏ. Khoảng biến thiên là **20 (Q1: 70.0 - Q3:
+    90.0):**. Điều này phản ánh sự phân hóa rõ rệt trong việc chuyên
+    cần: một nửa học sinh đi học từ mức khá (70) đến mức gần như tuyệt
+    đối (90).
+
+**Sleep_Hours:**
+
+-   **Trung tâm và phân phối:**\
+    Mean (≈ 7.03) và Median (7) gần trùng nhau, cho thấy phân phối số
+    giờ ngủ gần với phân phối đối xứng. Việc hai chỉ số trung tâm hội tụ
+    mạnh phản ánh dữ liệu có trung tâm rõ ràng và không bị ảnh hưởng
+    đáng kể bởi các giá trị ngoại lai.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên hẹp, từ 4 đến 10 (Range = 6), cho thấy mức độ phân
+    tán thấp. Điều này cho thấy phần lớn học sinh có thói quen ngủ tương
+    đối đồng nhất, với các giá trị nằm gần vùng trung tâm của phân phối.
+    Khoảng biến thiên chỉ **2 giờ (Q1: 6.0 - Q3: 8.0)**. Điều này cho
+    thấy thói quen ngủ nghỉ của đa số học sinh (50% ở giữa) rất ổn định,
+    chỉ dao động quanh mức 6 đến 8 tiếng.
+
+**Previous_Scores:**
+
+-   **Trung tâm và phân phối:**\
+    Mean (≈ 75.07) và Median (75) rất gần nhau, cho thấy phân phối điểm
+    số trước đây tương đối cân đối và gần đối xứng. Sự hội tụ giữa hai
+    chỉ số trung tâm cho thấy giá trị trung bình phản ánh tốt năng lực
+    học tập chung của học sinh trong mẫu dữ liệu.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên rộng, từ 50 đến 100 (Range = 50), phản ánh sự
+    chênh lệch đáng kể về trình độ học tập ban đầu. Tuy nhiên, phần lớn
+    các quan sát vẫn tập trung quanh vùng trung tâm, cho thấy các giá
+    trị cực thấp hoặc cực cao không chiếm ưu thế trong phân phối. Khoảng
+    tứ phân vị biến thiên là **25 điểm**. Điều này cho thấy 50% học sinh
+    ở nhóm giữa có mức điểm dao động rất mạnh. Có một khoảng cách đáng
+    kể giữa nhóm "trung bình thấp" (63 điểm) và nhóm "trung bình cao"
+    (88 điểm).
+
+**Tutoring_Sessions:**
+
+-   **Trung tâm và phân phối:**\
+    Median bằng 1 trong khi Mean ≈ 1.5 cho thấy phân phối không đối xứng
+    và có xu hướng lệch phải. Điều này phản ánh phần lớn học sinh tham
+    gia ít hoặc không tham gia học thêm, trong khi một số ít học sinh có
+    số buổi học thêm cao kéo giá trị trung bình tăng lên.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên từ 0 đến 8 (Range = 8) cho thấy sự khác biệt rõ
+    rệt về mức độ tham gia học thêm. Tuy nhiên, dữ liệu hội tụ mạnh ở
+    các giá trị thấp, trong khi các giá trị cao chỉ xuất hiện ở một nhóm
+    nhỏ và mang tính ngoại biên. Ở đây Median trùng với Q1 **(Q1: 1.0 -
+    Median: 1.0 - Q3: 2.0)**. Điều này cho thấy ít nhất 50% học sinh chỉ
+    học thêm tối đa 1 buổi. Tuy nhiên, khoảng cách đến Q3 là 1 đơn vị và
+    đến Max tận 8 đơn vị, cho thấy sự **lệch phải** (đuôi dài về phía số
+    buổi học thêm cao).
+
+**Physical_Activity:**
+
+-   **Trung tâm và phân phối:**\
+    Mean (≈ 2.97) và Median (3) gần trùng nhau, cho thấy phân phối mức
+    độ hoạt động thể chất tương đối cân đối. Trung tâm phân phối nằm rõ
+    ràng quanh mức trung bình, phản ánh mức độ vận động điển hình của
+    học sinh trong mẫu.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên từ 0 đến 6 (Range = 6) cho thấy mức độ phân tán
+    vừa phải. Phần lớn quan sát tập trung quanh vùng trung tâm, trong
+    khi các giá trị rất thấp phản ánh sự tồn tại của một nhóm nhỏ học
+    sinh ít hoặc không vận động. 50% dữ liệu tập trung rất hẹp trong
+    khoảng 2 giờ hoạt động thể chất mỗi tuần **(Q1: 2.0 - Q3: 4.0)**.
+
+**Exam_Score (sau log-transform):**
+
+-   **Trung tâm và phân phối:**\
+    Giá trị Mean (≈ 4.21) và Median (4.20) rất sát nhau, cho thấy phân
+    phối của log(Exam_Score) tương đối cân đối và tiệm cận phân phối đối
+    xứng. Sự hội tụ chặt chẽ giữa hai thước đo trung tâm cho thấy giá
+    trị trung bình phản ánh tốt xu hướng chung của phân phối và không bị
+    ảnh hưởng đáng kể bởi các giá trị lớn trong dữ liệu gốc.
+
+-   **Sự phân tán:**\
+    Khoảng biến thiên của log(Exam_Score) tương đối hẹp, dao động từ
+    khoảng 4.01 đến 4.62, phản ánh sự thu hẹp đáng kể độ phân tán so với
+    thang đo ban đầu. Khoảng tứ phân vị (từ 4.17 đến 4.23) cho thấy 50%
+    quan sát tập trung rất chặt quanh giá trị trung tâm, trong khi độ
+    lệch chuẩn ở mức thấp (SD ≈ 0.06) phản ánh mức độ biến động nhỏ
+    trong lõi phân phối. Điều này cho thấy log-transform đã giúp làm
+    giảm ảnh hưởng của các giá trị cực đoan và làm cho phân phối trở nên
+    ổn định hơn, phù hợp cho phân tích hồi quy. Khoảng biến thiên cực
+    hẹp (**0.06 đơn vị log**) **(Q1: 4.17 - Q3: 4.23)**. Điều này minh
+    chứng cho việc sau khi log-transform, dữ liệu đã co cụm lại rất mạnh
+    quanh giá trị trung tâm, gần như không có sự phân tán đáng kể trong
+    phạm vi 50% dữ liệu lõi.
+
+## 3.3. Barplot cho biến định tính:
+
+Ta vẽ barplot các biến định tính, phân các nhóm biến định tính thành 4
+nhóm với các đặc điểm thực tế giống nhau:
+
+### **3.3.1: Về môi trường bên ngoài**
+
+Nhóm này gồm 3 biến Gender, Internet_Access, Distance_from_Home.
+
+```{r fig.height=6, fig.width=10}
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+df <- df %>%
+  mutate(
+    Gender = as.factor(Gender),
+    Internet_Access = as.factor(Internet_Access),
+    Distance_from_Home = as.factor(Distance_from_Home)
+  )
+
+# Biểu đồ Gender
+
+p_gender <- ggplot(df, aes(
+  x = Gender, y = Exam_Score,
+  fill = Gender
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Gender),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Gender",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Learning_Disabilities
+p_internet <- ggplot(df, aes(
+  x = Learning_Disabilities, y = Exam_Score,
+  fill = Learning_Disabilities
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Learning_Disabilities),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Learning_Disabilities",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Distance_from_Home
+p_distance <- ggplot(df, aes(
+  x = Distance_from_Home, y = Exam_Score,
+  fill = Distance_from_Home
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Distance_from_Home),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Distance from Home",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Ghép layout: 2 trên – 1 dưới (nằm giữa)
+final_plot <-
+  (p_gender | p_internet
+| p_distance )
+
+final_plot
+```
+
+**Gender**
+
+-   Phân bố điểm số giữa Female và Male cho thấy median gần như trùng
+    nhau, không có sự chênh lệch rõ rệt về trung tâm phân phối. Khoảng
+    tứ phân vị (IQR) của hai nhóm tương đương, cho thấy mức độ phân tán
+    điểm số tương tự.
+
+-   Sự tương đồng về phân phối phản ánh rằng giới tính không phải là yếu
+    tố phân biệt mạnh đối với kết quả học tập trong bộ dữ liệu này.
+
+-   Một số quan sát ngoại lai xuất hiện ở cả hai giới, cho thấy thành
+    tích xuất sắc không tập trung vào một giới cụ thể.
+
+**Kết luận**: Gender có ảnh hưởng rất hạn chế và không mang ý nghĩa thực
+tiễn rõ ràng đối với Exam Score.
+
+**Learning_Disabilities**
+
+-   Nhóm không có Learning Disabilities có median điểm số cao hơn nhẹ so
+    với nhóm có Learning Disabilities. Tuy nhiên, hai phân phối vẫn
+    tương đồng đáng kể, cho thấy sự khác biệt tuy tồn tại nhưng không
+    quá lớn.
+
+-   Nhóm có Learning Disabilities có xu hướng độ phân tán nhỏ hơn, phản
+    ánh mặt bằng điểm số thấp hơn và ít điểm rất cao.
+
+-   Các điểm ngoại lai điểm cao xuất hiện chủ yếu ở nhóm không có
+    Learning Disabilities.
+
+**Kết luận**: Learning Disabilities có tác động tiêu cực nhẹ đến kết quả
+học tập, nhưng không đủ mạnh để giải thích sự khác biệt lớn về điểm số.
+
+**Distance_from_Home (Khoảng cách từ nhà đến trường)**
+
+-   Có xu hướng tăng dần median điểm số từ nhóm Far → Moderate → Near.
+    Nhóm học sinh ở gần trường (Near) đạt median cao nhất, trong khi
+    nhóm ở xa (Far) có median thấp hơn.
+
+-   Mặc dù vậy, các phân phối vẫn khá tương đồng, cho thấy khoảng cách
+    chỉ tạo ra khác biệt vừa phải.
+
+-   Nhóm Near có nhiều điểm cao hơn (upper tail dài hơn), gợi ý điều
+    kiện đi lại thuận lợi có thể hỗ trợ hiệu quả học tập.
+
+**Kết luận**: Distance from Home thể hiện xu hướng ảnh hưởng rõ ràng
+nhất trong ba biến, nhưng mức độ ảnh hưởng vẫn ở mức vừa phải.
+
+**KẾT LUẬN CHO NHÓM: ĐẶC ĐIỂM CÁ NHÂN VÀ NHÂN KHẨU HỌC**
+
+Nhìn chung, các biến thuộc nhóm Đặc điểm Cá nhân và Nhân khẩu học chỉ
+cho thấy ảnh hưởng ở mức độ nhỏ đến trung bình đối với điểm số Exam
+Score. Trong nhóm này, Distance from Home là biến thể hiện xu hướng tác
+động rõ ràng nhất, tiếp đến là Learning Disabilities, trong khi Gender
+gần như không tạo ra sự khác biệt đáng kể.
+
+Tuy nhiên, sự tương đồng giữa các phân phối cho thấy nhóm biến này không
+đóng vai trò quyết định trong kết quả học tập. Chúng nên được xem là yếu
+tố nền (background factors), có tác dụng điều chỉnh hoặc bổ trợ, hơn là
+các yếu tố chính so với những nhóm biến liên quan trực tiếp đến nỗ lực
+học tập, thời gian học, và điều kiện học tập.
+
+### **3.3.2: Nền tảng và Điều kiện Gia đình**
+
+Nhóm này gồm 3 biến Family_Income, Parental_Education_Level,
+Parental_Involvement:
+
+```{r fig.height=6, fig.width=10}
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+df <- df %>%
+  mutate(
+    Family_Income = as.factor(Family_Income),
+    Parental_Education_Level = as.factor(Parental_Education_Level),
+    Parental_Involvement = as.factor(Parental_Involvement)
+  )
+
+# Biểu đồ Family_Income
+p_Family_Income <- ggplot(df, aes(
+  x = Family_Income, y = Exam_Score,
+  fill = Family_Income
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Family_Income),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Family_Income",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Parental_Education_Level
+p_Parental_Education_Level <- ggplot(df, aes(
+  x = Parental_Education_Level, y = Exam_Score,
+  fill = Parental_Education_Level
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Parental_Education_Level),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Parental_Education_Level",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Parental_Involvement
+p_Parental_Involvement <- ggplot(df, aes(
+  x = Parental_Involvement, y = Exam_Score,
+  fill = Parental_Involvement
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Parental_Involvement),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Parental_Involvement",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Ghép layout: 2 trên – 1 dưới (nằm giữa)
+final_plot <-
+  (p_Family_Income | p_Parental_Education_Level|p_Parental_Involvement)
+
+final_plot
+```
+
+**Family_Income**
+
+-   Phân bố điểm số giữa các nhóm Low – Medium – High cho thấy sự khác
+    biệt về median không lớn, các giá trị trung tâm khá gần nhau. Nhóm
+    Medium và High income có median nhỉnh hơn nhẹ so với nhóm Low, tuy
+    nhiên mức chênh lệch là không đáng kể.
+
+-   Gần tương đồng về phân phối cho thấy thu nhập gia đình không phải là
+    yếu tố quyết định trực tiếp đến điểm số.
+
+-   Điểm ngoại lai xuất hiện ở cả ba nhóm, cho thấy học sinh có thành
+    tích cao không chỉ tập trung ở nhóm thu nhập cao.
+
+**Kết luận**: Family Income có tác động yếu, chủ yếu mang tính gián tiếp
+hơn là ảnh hưởng trực tiếp đến kết quả học tập.
+
+**Parental_Education_Level**
+
+-   Có xu hướng tăng dần median điểm số từ nhóm High School → College →
+    Postgraduate. Nhóm Postgraduate có median cao nhất và nhiều quan sát
+    ở vùng điểm cao hơn.
+
+-   Tuy nhiên, khoảng tứ phân vị của các nhóm vẫn chồng lấn khá lớn, cho
+    thấy sự khác biệt tồn tại nhưng không quá mạnh.
+
+-   Điều này phản ánh rằng trình độ học vấn của phụ huynh có ảnh hưởng
+    tích cực, nhưng không hoàn toàn quyết định thành tích học tập.
+
+**Kết luận**: Parental Education Level là biến thể hiện mối quan hệ rõ
+ràng nhất trong nhóm này, với tác động tích cực nhưng ở mức vừa phải.
+
+**Parental_Involvement**
+
+-   Nhóm High involvement có median điểm số cao hơn so với nhóm Low
+    involvement. Nhóm Medium involvement nằm giữa, tạo thành xu hướng
+    tăng hợp lý theo mức độ tham gia. Nhóm Low involvement có phân bố
+    lệch về phía điểm thấp hơn và ít điểm rất cao.
+
+-   Sự khác biệt giữa các nhóm rõ hơn so với biến Family Income.
+
+**Kết luận**: Parental Involvement có tác động tích cực tương **đối rõ
+ràng** đến kết quả học tập của học sinh.
+
+**KẾT LUẬN CHO NHÓM NỀN TẢNG & ĐIỀU KIỆN GIA ĐÌNH**
+
+Nhìn chung, các yếu tố thuộc nhóm Nền tảng và Điều kiện gia đình cho
+thấy mối liên hệ tích cực nhưng không quá mạnh với kết quả học tập.
+Trong đó, Parental Involvement và Parental Education Level là hai biến
+có ảnh hưởng rõ ràng hơn, trong khi Family Income đóng vai trò là nhân
+tố nền tảng. Dù không đẩy mức điểm trung bình lên cao hẳn so với các
+nhóm khác, nhưng điều kiện kinh tế tốt giúp duy trì sự ổn định và hạn
+chế các mức điểm cực thấp.
+
+Kết quả này gợi ý rằng chất lượng hỗ trợ học tập từ gia đình (thông qua
+sự quan tâm và trình độ học vấn của phụ huynh) quan trọng hơn điều kiện
+kinh tế thuần túy. Do đó, việc nâng cao nhận thức và mức độ đồng hành
+của phụ huynh có thể mang lại hiệu quả cải thiện học tập tốt hơn so với
+chỉ cải thiện thu nhập.
+
+### **3.3.3: Tâm lý và Tương tác xã hội**
+
+Nhóm này bao gồm 3 biến Motivation_Level, Peer_Influence,
+Extracurricular_Activities.
+
+```{r fig.height=6, fig.width=10}
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+df <- df %>%
+  mutate(
+    Motivation_Level = as.factor(Motivation_Level),
+    Peer_Influence = as.factor(Peer_Influence),
+    Extracurricular_Activities = as.factor(Extracurricular_Activities)
+  )
+
+# Biểu đồ Motivation_Level
+p_Motivation_Level <- ggplot(df, aes(
+  x = Motivation_Level, y = Exam_Score,
+  fill = Motivation_Level
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Motivation_Level),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Motivation_Level",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Parental_Education_Level
+p_Peer_Influence <- ggplot(df, aes(
+  x = Peer_Influence, y = Exam_Score,
+  fill = Peer_Influence
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Peer_Influence),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Peer_Influence",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Extracurricular_Activities
+p_Extracurricular_Activities <- ggplot(df, aes(
+  x = Extracurricular_Activities, y = Exam_Score,
+  fill = Extracurricular_Activities
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Extracurricular_Activities),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Extracurricular_Activities",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Ghép layout: 2 trên – 1 dưới (nằm giữa)
+final_plot <-
+  (p_Motivation_Level | p_Peer_Influence| p_Extracurricular_Activities)
+
+final_plot
+
+```
+
+**Motivation_Level**
+
+-   Điểm số trung vị (median) có xu hướng tăng nhẹ từ nhóm Low → Medium
+    → High. Nhóm Low motivation có median thấp nhất và phân bố nghiêng
+    nhiều hơn về vùng điểm thấp. Nhóm Medium và High có median gần nhau,
+    cho thấy khi đã đạt mức động lực trung bình, việc tăng thêm động lực
+    chỉ cải thiện điểm số ở mức hạn chế.
+
+-   Các phân phối vẫn khá tương đồng, cho thấy động lực học tập không
+    phải yếu tố duy nhất quyết định kết quả.
+
+**Kết luận**: Motivation Level có **tác động tích cực**, nhưng mức ảnh
+hưởng **vừa phải** và không tuyến tính mạnh.
+
+**Peer_Influence**
+
+-   Có xu hướng rõ ràng: Negative → Neutral → Positive, median điểm số
+    tăng dần. Nhóm Positive peer influence có nhiều quan sát ở vùng điểm
+    cao hơn và ít điểm thấp hơn. Nhóm Negative peer influence tập trung
+    nhiều hơn ở vùng điểm thấp, phản ánh ảnh hưởng tiêu cực của môi
+    trường bạn bè.
+
+-   Mức chênh lệch giữa các nhóm rõ ràng hơn so với Motivation Level.
+
+**Kết luận**: Peer Influence là một trong những biến có tác động rõ rệt
+nhất trong nhóm tâm lý – xã hội.
+
+**Extracurricular_Activities**
+
+-   Nhóm Yes có median điểm số cao hơn nhẹ so với nhóm No. Nhóm tham gia
+    ngoại khóa xuất hiện nhiều điểm cao (outliers), cho thấy khả năng
+    liên quan đến các kỹ năng bổ trợ như quản lý thời gian, kỹ năng xã
+    hội.
+
+-   Tuy nhiên, sự khác biệt tổng thể giữa hai nhóm không lớn, phân bố
+    vẫn tương đồng khá mạnh.
+
+**Kết luận**: Extracurricular Activities có tác động tích cực nhưng yếu,
+mang tính hỗ trợ hơn là yếu tố quyết định.
+
+**KẾT LUẬN CHUNG CHO NHÓM TÂM LÍ VÀ TƯƠNG TÁC XÃ HỘI:**
+
+Toàn bộ các biến trong nhóm này đều tỷ lệ thuận với điểm số
+(`Exam_Score`). Tuy nhiên, mức độ ảnh hưởng không đồng đều. Trong khi
+hoạt động ngoại khóa chỉ mang tính hỗ trợ nhẹ, thì **Peer_Influence**
+lại cho thấy sự phân cực rõ rệt nhất, khẳng định môi trường giao tiếp
+đóng vai trò then chốt trong việc định hình kết quả học tập.
+
+sự tăng trưởng điểm số không tuyến tính hoàn toàn với mức độ động lực.
+Khi học sinh đạt tới mức **Medium Motivation**, sự khác biệt về điểm số
+so với mức **High** không còn quá lớn.
+
+### **3.3.4: Môi trường và Nguồn lực học tập**
+
+Nhóm gồm 4 biến Internet_Access, Access_to_Resource, Teacher_Quality,
+School_Type.
+
+```{r fig.height=6, fig.width=10}
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+df <- df %>%
+  mutate(
+    Internet_Access = as.factor(Internet_Access),
+    Access_to_Resources = as.factor(Access_to_Resources),
+    School_Type = as.factor(School_Type),
+    Teacher_Quality = as.factor(Teacher_Quality)
+  )
+
+# Biểu đồ Internet_Access
+p_Internet_Access <- ggplot(df, aes(
+  x = Internet_Access, y = Exam_Score,
+  fill = Internet_Access
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Internet_Access),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Internet_Access",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Access_to_Resources
+p_Access_to_Resources <- ggplot(df, aes(
+  x = Access_to_Resources, y = Exam_Score,
+  fill = Access_to_Resources
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Access_to_Resources),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Access_to_Resources",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ School_Type
+p_School_Type <- ggplot(df, aes(
+  x = School_Type, y = Exam_Score,
+  fill = School_Type
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = School_Type),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "School_Type",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Biểu đồ Teacher_Quality
+p_Teacher_Quality <- ggplot(df, aes(
+  x = Teacher_Quality, y = Exam_Score,
+  fill = Teacher_Quality
+)) +
+  geom_boxplot(alpha = 0.85, outlier.alpha = 0) +
+  geom_jitter( aes(color = Teacher_Quality),width = 0.25, alpha = 0.15, size = 1) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  labs(
+    title = "Teacher_Quality",
+    x = NULL,
+    y = "Exam Score"
+  )
+
+# Ghép layout: 2 trên – 1 dưới (nằm giữa)
+final_plot <-
+  (p_Internet_Access | p_Access_to_Resources) /
+  (p_School_Type| p_Teacher_Quality )
+
+final_plot
+```
+
+**Internet_Access**
+
+-   Nhóm có Internet (Yes) có điểm trung vị cao hơn so với nhóm không có
+    Internet (No).
+
+-   Phân bố điểm của nhóm *Yes* rộng hơn và xuất hiện nhiều điểm cao,
+    cho thấy Internet giúp học sinh tiếp cận tài liệu, học trực tuyến và
+    công cụ hỗ trợ học tập.
+
+-   Tuy nhiên, sự tương đồng giữa hai nhóm vẫn lớn, cho thấy Internet là
+    điều kiện cần nhưng chưa đủ để tạo ra khác biệt lớn về điểm số.
+
+**Nhận xét**: Internet Access có tác động tích cực mức trung bình đến
+kết quả học tập.
+
+**Access_to_Resources**
+
+-   Nhóm High access có median điểm cao nhất. Nhóm Low access có median
+    thấp hơn rõ rệt và phân bố nghiêng về vùng điểm thấp. Nhóm Medium
+    nằm giữa nhưng gần với nhóm High hơn Low.
+
+**Nhận xét**: Mức độ tiếp cận tài nguyên học tập thể hiện mối quan hệ
+thuận rõ ràng với điểm số, phản ánh vai trò quan trọng của sách vở,
+thiết bị học tập và tài liệu bổ trợ.
+
+**School_Type**
+
+-   Điểm trung vị giữa Private và Public gần như tương đương nhau. Phân
+    bố điểm của hai nhóm tương đồng rất mạnh, không có sự khác biệt rõ
+    ràng về trung tâm phân phối.
+
+-   Điều này cho thấy loại hình trường học không phải yếu tố quyết định
+    trực tiếp đến kết quả học tập trong bộ dữ liệu này.
+
+**Nhận xét**: School Type có ảnh hưởng yếu hoặc không đáng kể đến Exam
+Score.
+
+**Teacher_Quality**
+
+-   Nhóm High teacher quality có median cao hơn so với nhóm Low. Nhóm
+    Medium nằm giữa nhưng khá gần với nhóm High.
+
+-   Phân bố của nhóm Low có xu hướng tập trung nhiều hơn ở vùng điểm
+    thấp.
+
+**Nhận xét**: Teacher Quality có tác động tích cực tương đối rõ, phản
+ánh vai trò của chất lượng giảng dạy đối với kết quả học tập.
+
+**KẾT LUẬN CHUNG CHO NHÓM ĐIỀU KIỆN HỌC TẬP VÀ MÔI TRƯỜNG TRƯỜNG HỌC**
+
+Nhóm biến liên quan đến điều kiện học tập và môi trường trường học cho
+thấy ảnh hưởng đáng kể hơn so với các đặc điểm cá nhân đơn thuần, đặc
+biệt là Access to Resources và Teacher Quality. Việc được tiếp cận đầy
+đủ tài nguyên học tập và có giáo viên chất lượng cao góp phần nâng cao
+điểm số một cách nhất quán.
+
+Trong khi đó, School Type không thể hiện sự khác biệt rõ ràng, cho thấy
+chất lượng học tập phụ thuộc nhiều hơn vào nguồn lực và chất lượng giảng
+dạy thay vì hình thức trường công hay tư.
+
+## 3.4. Biểu đồ tương quan:
+
+Cuối cùng, ta khảo sát ma trận tương quan giữa các biến với nhau và với
+biến Exam_Socre_log:
+
+```{r echo=FALSE, fig.align='center', fig.width=6, fig.height=6, out.width="80%", crop=TRUE}
+
+library(corrplot)
+library(dplyr)
+df_nomiss$Exam_Score_log <- log(df_nomiss$Exam_Score)
+
+# Chọn biến numeric
+num_vars <- df_nomiss %>%
+  select(where(is.numeric)) %>%
+
+  select(-Exam_Score) %>% select(everything(), Exam_Score_log)
+
+# Ma trận tương quan
+cor_mat <- cor(num_vars, use = "pairwise.complete.obs")
+
+# Vẽ lại với tham số cụ thể
+corrplot::corrplot(
+  cor_mat,
+  method = "color",
+  type = "upper",
+  tl.col = "black",
+  tl.srt = 45,
+  addCoef.col = "black",
+  number.cex = 0.7,
+  diag = TRUE
+)
+
+```
+
+Dựa vào biểu đồ tương quan, **Attendance** và **Hours_Studied** tác động
+rõ rệt đến điểm thi. Ngược lại, các biến khác ảnh hưởng đến điểm thi
+thấp.
+
+Hệ số tương quan giữa các biến độc lập với nhau rất nhỏ (dao động từ
+$-0.02$ đến $0.02$), cho thấy các biến dự báo gần như độc lập, rủi ro
+xuất hiện **đa cộng tuyến** là rất thấp.
+
+# 4. Chia bộ dữ liệu:
+
+Trước khi vào mô hình hồi quy, ta chia bộ dữ liệu thành tập train và
+test để huấn luyện và dự đoán:
+
+```{r echo=TRUE}
+set.seed(123)
+n <- nrow(df)
+train_index <- sample(1:n, 0.8*n)
+train <- df[train_index, ]
+test  <- df[-train_index, ]
+saveRDS(train, "train_data.rds")
+saveRDS(test,  "test_data.rds")
+```
+
+# 5. Xây dựng và Phân tích Mô hình hồi quy
+
+## 5.1. Xây dựng mô hình đầy đủ kiểm tra đa cộng tuyến và :
+
+Trước tiên chúng em sẽ dùng OLS đầy đủ với biến lục tiêu là
+Exam_Score_log để làm baseline và kiểm tra đa cộng tuyến (không dùng OLS
+để chọn biến).
+
+```{r}
+
+ols_full <- lm(Exam_Score_log ~ .-Exam_Score, data=train)
+# Tính VIF
+vif_full <- vif(ols_full)
+
+# Chuyển về dataframe cho báo cáo
+vif_df <- vif(ols_full) %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "Variable") %>%
+  select(Variable, `GVIF^(1/(2*Df))`) %>%
+  rename(VIF = `GVIF^(1/(2*Df))`)
+
+vif_df
+```
+
+Các hệ số GVIF của tất cả biến đều xấp xỉ 1, chứng tỏ **không tồn tại
+hiện tượng đa cộng tuyến** trong mô hình. Điều này đảm bảo tính ổn định
+và độ tin cậy của các ước lượng hồi quy.
+
+Trong các phần tiếp theo, nhóm sẽ áp dụng các phương pháp mô hình hóa
+khác và tiến hành so sánh kết quả nhằm đánh giá độ phù hợp và hiệu quả
+dự báo giữa các mô hình.
+
+## 5.2. Xây dựng mô hình bằng phương pháp Stepwise theo tiêu chuẩn AIC
+
+**Phương pháp Stepwise** (cả tiến và lùi) là 1 phương pháp chọn lọc mô
+hình rất tốt, cho phép so sánh tất cả các mô hình dựa theo 1 tiêu chuẩn
+(ở dưới ta chọn AIC) mà không bỏ sót bất kì mô hình nào.
+
+Lý do chọn tiêu chuẩn AIC là để được 1 mô hình vừa đủ biến, giải thích
+và dự báo đều tốt, AIC để cân bằng tốt các điều này trong khi tiêu chuẩn
+BIC có hình phạt khá nặng, nó sẽ loại các biến ít ý nghĩa trong mô hình
+từ đó làm giảm khả năng dự báo của mô hình.
+
+```{r}
+#Áp dụng phương pháp Stepwise theo thiêu chí AIC
+
+# Stepwise AIC – không in quá trình
+ols_aic <- stepAIC(
+  ols_full,
+  direction = "both",
+  trace = FALSE
+)
+
+# Chỉ xuất kết quả cuối
+summary(ols_aic)
+```
+
+Mô hình AIC có kết quả $R_2=0.7602$ và $R^2_{adj}≈0.759$. Điều này cho
+thấy khả năng giải thích của mô hình hầu là khá tốt (giải thích được 76%
+dữ liệu). Cụ thể, mô hình AIC đã **loại bỏ ba biến không có ý nghĩa
+thống kê** trong mô hình đầy đủ, bao gồm **Sleep_Hours, School_Type và
+Gender**. Các biến còn lại đều có ý nghĩa thống kê cao (*p-value* rất
+nhỏ), cho thấy chúng đóng góp đáng kể vào việc giải thích biến phụ thuộc
+Exam_Score.
+
+Mô hình AIC giảm số lượng biến dự báo giúp mô hình **gọn hơn, dễ diễn
+giải hơn và hạn chế nguy cơ overfitting**.
+
+## 5.3. Ridge, Lasso, Elastic Net:
+
+Bên cạnh tiêu chí AIC, nhóm sử dụng thêm tiêu chí 3 phương pháp Ridge,
+Lasso, Elastic Net để chạy mô hình hồi quy.
+
+```{r}
+# Tạo ma trận X và vector y (loại biến gốc)
+x_train <- model.matrix(Exam_Score_log ~ . - Exam_Score, train)
+x_train <- x_train[, colnames(x_train) != "(Intercept)"]
+y_train <- train$Exam_Score_log
+x_test  <- model.matrix(Exam_Score_log ~ . - Exam_Score, test)
+x_test  <- x_test[, colnames(x_test) != "(Intercept)"]
+y_test <- test$Exam_Score_log
+
+# Ridge
+ridge_cv <- cv.glmnet(x_train, y_train, alpha = 0)
+ridge_coef <- coef(ridge_cv, s = ridge_cv$lambda.min)
+
+# Lasso
+lasso_cv <- cv.glmnet(x_train, y_train, alpha = 1)
+lasso_coef <- coef(lasso_cv, s = lasso_cv$lambda.min)
+
+# Elastic Net với tối ưu alpha
+alpha_grid <- seq(0.1, 0.9, by = 0.1)
+cv_results <- lapply(alpha_grid, function(a) cv.glmnet(x_train, y_train, alpha = a))
+cv_errors <- sapply(cv_results, function(x) min(x$cvm))
+best_alpha <- alpha_grid[which.min(cv_errors)]
+best_elastic <- cv_results[[which.min(cv_errors)]]
+elastic_coef <- coef(best_elastic, s = best_elastic$lambda.min)
+
+# Hàm chuẩn hóa bảng hệ số
+coef_df <- function(coef_obj, model_name) {
+  df <- as.matrix(coef_obj) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("Variable")
+  
+  colnames(df)[2] <- "Estimate"
+  
+  df %>%
+    mutate(Model = model_name) %>%
+    select(Model, Variable, Estimate)
+}
+
+# Chuẩn hóa hệ số các mô hình
+ridge_df   <- coef_df(ridge_coef, "Ridge")
+lasso_df   <- coef_df(lasso_coef, "LASSO")
+elastic_df <- coef_df(elastic_coef, "ElasticNet")
+coef_table <- bind_rows(ridge_df, lasso_df, elastic_df) %>%
+  filter(Variable != "(Intercept)") %>%
+  pivot_wider(
+    names_from  = Model,
+    values_from = Estimate,
+    values_fill = 0
+  )
+
+#OlS_A
+ols_coef <- coef(ols_aic)
+ols_df <- tibble(
+  Variable = names(ols_coef),
+  OLS_AIC  = as.numeric(ols_coef)
+) %>%
+  filter(Variable != "(Intercept)")
+coef_table_final <- coef_table %>%
+  left_join(ols_df, by = "Variable")
+
+lambda_ridge   <- ridge_cv$lambda.min
+lambda_lasso   <- lasso_cv$lambda.min
+lambda_elastic <- best_elastic$lambda.min
+
+lambda_row <- tibble(
+  Variable   = "Lambda (λ)",
+  Ridge      = lambda_ridge,
+  LASSO      = lambda_lasso,
+  ElasticNet = lambda_elastic,
+  OLS_AIC    = NA
+)
+
+coef_table_final_with_lambda <- bind_rows(
+  lambda_row,
+  coef_table_final
+)
+kable(
+  coef_table_final_with_lambda,
+  digits = 5,
+  caption = "Comparison of Regression Coefficients and Optimal Lambda Values"
+)
+
+```
+
+Nhìn chung, dấu của các hệ số **không thay đổi** so với các biến tương
+ứng trong mô hình AIC và các phương pháp với nhau mà chỉ thay đổi giá
+trị nhẹ → tức hướng tác động của biến giống nhau.
+
+Hệ số $\lambda$ đóng vai trò là "tham số hình phạt" (penalty parameter).
+Nó quyết định mức độ kiểm soát hiện tượng quá khớp (overfitting).
+
+-   **Giá trị Lambda:** Ta thấy
+    $\lambda_{Ridge} (0.00338) > \lambda_{ElasticNet} (0.0007) > \lambda_{LASSO} (0.00005)$.
+
+-   **Mức độ tác động:** $\lambda$ của Ridge lớn nhất cho thấy mô hình
+    này đang thực hiện việc điều chỉnh các hệ số một cách đồng đều và
+    mạnh mẽ hơn về phía 0 nhưng không triệt tiêu chúng hoàn toàn.
+
+    -   $\lambda$ của LASSO và ElasticNet rất nhỏ, điều này giải thích
+        tại sao kết quả của chúng rất sát với mô hình OLS_AIC ban đầu.
+        Mô hình cho rằng dữ liệu không cần một hình phạt quá lớn để đạt
+        được độ chính xác tốt nhất.
+
+Các biến **School_Type, Gender, Sleep_Hours**, vốn không có ý nghĩa
+trong AIC, **được giữ lại** trong Ridge/Lasso/ElasticNet → nhưng giá trị
+nhỏ nên có thể không ảnh hưởng nhiều.
+
+## 5.4. Mô hình tối ưu:
+
+Do các mô hình Ridge, LASSO và Elastic Net sử dụng cơ chế điều chuẩn làm
+thay đổi bậc tự do hiệu dụng của mô hình, chỉ số Adjusted R² không còn
+phù hợp để so sánh. Với các mô hình điều chuẩn, bậc tự do hiệu dụng
+không xác định rõ, do đó việc so sánh dựa trên CV error là phù hợp hơn.
+
+```{r}
+
+train <- readRDS("train_data.rds")
+test  <- readRDS("test_data.rds")
+#ols
+ols_full <- lm(Exam_Score_log ~ . - Exam_Score, data = train)
+
+ols_aic <- stepAIC(
+  ols_full,
+  direction = "both",
+  trace = FALSE
+)
+set.seed(123)
+
+ctrl <- trainControl(
+  method = "cv",
+  number = 10
+)
+
+ols_full_cv <- train(
+  Exam_Score_log ~ . - Exam_Score,
+  data = train,
+  method = "lm",
+  trControl = ctrl
+)
+
+ols_aic_cv <- train(
+  formula(ols_aic),
+  data = train,
+  method = "lm",
+  trControl = ctrl
+)
+
+ols_full_rmse_cv <- min(ols_full_cv$results$RMSE)
+ols_aic_rmse_cv  <- min(ols_aic_cv$results$RMSE)
+
+x_train <- model.matrix(Exam_Score_log ~ . - Exam_Score, train)
+x_test  <- model.matrix(Exam_Score_log ~ . - Exam_Score, test)
+
+x_train <- x_train[, colnames(x_train) != "(Intercept)"]
+x_test  <- x_test[, colnames(x_test) != "(Intercept)"]
+
+y_train <- train$Exam_Score_log
+y_test  <- test$Exam_Score_log
+
+# Ridge – LASSO – Elastic Net (CV)
+set.seed(123)
+
+ridge_cv <- cv.glmnet(x_train, y_train, alpha = 0)
+lasso_cv <- cv.glmnet(x_train, y_train, alpha = 1)
+
+alpha_grid <- seq(0.1, 0.9, by = 0.1)
+cv_list <- lapply(alpha_grid, function(a)
+  cv.glmnet(x_train, y_train, alpha = a)
+)
+
+cv_errors <- sapply(cv_list, function(x) min(x$cvm))
+best_elastic <- cv_list[[which.min(cv_errors)]]
+
+ridge_rmse_cv   <- sqrt(min(ridge_cv$cvm))
+lasso_rmse_cv   <- sqrt(min(lasso_cv$cvm))
+elastic_rmse_cv <- sqrt(min(best_elastic$cvm))
+
+
+cv_table <- tibble(
+  Model = c("OLS Full", "OLS AIC", "Ridge", "LASSO", "Elastic Net"),
+  CV_RMSE = c(
+    ols_full_rmse_cv,
+    ols_aic_rmse_cv,
+    ridge_rmse_cv,
+    lasso_rmse_cv,
+    elastic_rmse_cv
+  )
+)
+
+kable(
+  cv_table,
+  digits = 4,
+  caption = "Model Comparison using 10-fold Cross-Validation RMSE"
+)
+
+rsq <- function(y, yhat) {
+  1 - sum((y - yhat)^2) / sum((y - mean(y))^2)
+}
+
+ols_pred     <- predict(ols_aic, newdata = test)
+ridge_pred   <- predict(ridge_cv, s = ridge_cv$lambda.min, newx = x_test)
+lasso_pred   <- predict(lasso_cv, s = lasso_cv$lambda.min, newx = x_test)
+elastic_pred <- predict(best_elastic, s = best_elastic$lambda.min, newx = x_test)
+
+test_table <- tibble(
+  Model = c("OLS AIC", "Ridge", "LASSO", "Elastic Net"),
+  R2_Test = c(
+    rsq(y_test, ols_pred),
+    rsq(y_test, ridge_pred),
+    rsq(y_test, lasso_pred),
+    rsq(y_test, elastic_pred)
+  )
+)
+
+kable(
+  test_table,
+  digits = 4,
+  caption = "Model Performance on Test Set (R²)"
+)
+
+```
+
+**Đánh giá:**
+
+Các mô hình Ridge/Lasso/ElasticNet giữ lại một vài biến mà AIC loại bỏ,
+nhưng $R^2$ **trên tập test gần như tương đương** và kết quả so sánh các
+mô hình cho thấy OLS AIC đạt **giá trị CV RMSE thấp nhất** → nghĩa là
+các biến này ảnh hưởng rất nhỏ, không cải thiện dự đoán đáng kể.
+
+**Mô hình AIC (stepwise)** chỉ loại bỏ biến dựa trên tiêu chí cải thiện
+AIC, tức là tối ưu **mức độ gọn + fit dữ liệu**. Nếu một biến có ảnh
+hưởng **rất nhỏ** hoặc cộng hưởng với các biến khác, stepwise có thể
+loại bỏ nó.
+
+**Ridge/Lasso/ElasticNet** lại dùng **regularization**: **Ridge** giảm
+nhẹ các hệ số, không loại bỏ biến → giữ lại mọi biến nhưng thu nhỏ hệ số
+cho biến ít quan trọng. **Lasso** có thể thực sự loại bỏ biến (co về 0),
+nhưng trong dữ liệu, 3 biến School_Type, Gender, Sleep_Hours **không bị
+co về 0** → vẫn giữ lại, chứng tỏ chúng có **tác động tiềm ẩn**, dù nhỏ.
+**ElasticNet** kết hợp cả hai hiệu ứng trên.
+
+Mô hình **AIC được chọn là mô hình cuối cùng** vì vừa tối ưu khả năng
+giải thích (giữ các biến quan trọng, loại bỏ biến không có ý nghĩa) vừa
+có **hiệu năng dự đoán cao hơn** và đạt **CV RMSE nhỏ nhất** so với các
+mô hình regularized (Ridge, Lasso, Elastic Net). Một số biến như
+*School_Type, Gender, Sleep_Hours* bị AIC loại bỏ, nhưng các mô hình
+regularized vẫn giữ lại, cho thấy chúng có ảnh hưởng nhỏ tiềm ẩn. Tuy
+nhiên, sự khác biệt về dự đoán là không đáng kể, do đó AIC cân bằng tốt
+giữa gọn – giải thích – dự đoán
+
+## 5.5. Kiểm định các giả định của mô hình
+
+Mô hình cuối cùng được chọn là mô hình theo tiêu chí AIC. Bây giờ chúng
+em sẽ kiểm định mô hình này.
+
+### 5.5.1.Linearity
+
+Sử dụng t-test kiểm tra tính tuyến tính của phần dư với giả thuyết và
+đối thuyết là:
+
+\- $H_0:$ Phần dư có tính tuyến tính
+
+\- $H_1:$ Phần dư không có tính tuyến tính.
+
+```{r}
+plot(ols_aic,1)
+t.test(ols_aic$residuals , mu = 0)
+```
+
+**Nhận xét:**
+
+-   Thông qua biểu đồ, phần dư có xu hướng phân tán ngẫu nhiên quanh
+    đường 0, không có xu hướng theo đường cong hoặc parabol. Điều này có
+    thể thấy giả định tuyến tính được thỏa mãn.
+
+-   Thông qua kiểm định t-test, nhận thấy p-value \> 0.05, do đó không
+    có đủ cơ sở để bác bỏ giả thuyết $H_0$ với mức ý nghĩa 5%, với $H_0$
+    trong trường hợp này là "Phần dư có tính tuyến tính" → mô hình thỏa
+    kiểm định tính tuyến tính.
+
+### 5.5.2. Normality
+
+Sử dụng Aderson-Darling Test kiểm tra tính phân phối chuẩn với mức ý
+nghĩa 5% của phần dư với giả thuyết và đối thuyết là:
+
+\- $H_0:$ Phần dư có phân phối chuẩn
+
+\- $H_1:$ Phần dư không có phân phối chuẩn
+
+```{r}
+qqnorm(df$Exam_Score,
+       main = "QQ-plot of log(Exam_Score)")
+qqline(df$Exam_Score, col = "red", lwd = 2)
+```
+
+\- Biểu đồ **QQ-plot** của biến log(Exam_Score) cho thấy dữ liệu tuân
+thủ tốt phân phối chuẩn ở vùng trung tâm. Tuy nhiên, quan sát ở hai đầu
+phân phối cho thấy hiện tượng đuôi nặng (**heavy-tailed**), đặc biệt là
+ở phía bên phải. Điều này chứng tỏ sự tồn tại của một nhóm quan sát có
+điểm số cao hơn đáng kể so với kỳ vọng của phân phối chuẩn, ngay cả sau
+khi đã thực hiện biến đổi log.
+
+Kiểm đinh Aderson-Darling Test:
+
+```{r}
+ad_test <- ad.test(residuals(ols_aic))
+cat("A =", ad_test$statistic, "\n")
+cat("p-value =", ad_test$p.value, "\n")
+```
+
+\- Thông qua **Aderson-Darling Test**, nhận thấy p-value \< 0.05, đủ
+điều kiện bác bỏ giả thuyết $H_0$. Do đó, **phần dư không có phân phối
+chuẩn**.
+
+### 5.5.3.Homoscedasticity
+
+Trong hồi quy tuyến tính, ta có giả định là phương sai của sai số phải
+không đổi. Sử dụng Breusch-Pagan Test kiểm tra tính đồng nhất của phương
+sai với giả thuyết và đối thuyết là:
+
+\- $H_0:$ Phương sai là đồng nhất
+
+\- $H_1:$ Phương sai không đồng nhất
+
+```{r}
+fitted_ols <- fitted(ols_aic) 
+resid_ols   <- resid(ols_aic) 
+# Vẽ Scale–Location plot
+plot(
+  fitted_ols,
+  sqrt(abs(resid_ols)),
+  xlab = "Fitted values",
+  ylab = "√|Residuals|",
+  main = "Scale–Location Plot"
+)
+
+# (tuỳ chọn) thêm đường xu hướng LOWESS để dễ quan sát
+lines(
+  lowess(fitted_ols, sqrt(abs(resid_ols))),
+  col = "red",
+  lwd = 2
+)
+
+
+```
+
+Biểu đồ **Scale-Location Plot** cho thấy hiện tượng phân lớp dữ liệu
+nghiêm trọng, vi phạm giả định về phương sai sai số đồng nhất. Có một
+nhóm quan sát có sai số dương lớn vượt trội so với phần còn lại, cho
+thấy mô hình OLS hiện tại chưa giải thích được hết các biến động ở nhóm
+điểm số . Các đường cánh cung ở phần dưới cho thấy sự ảnh ưởng của các
+biến độc lập có các giá trị rời rạc.
+
+```{r}
+car::ncvTest(ols_aic)
+```
+
+**Nhận xét**: Thông qua ncvTest, nhận thấy p-value nhỏ hơn 0.05, do đó
+ta có đủ cơ sở để bác bỏ giả thuyết $H_0$, có nghĩa là **phương sai
+không đồng nhất**
+
+### 5.5.4.Independence
+
+Dùng Durbin-Watson Test điểm kiểm tra tính độc lập của các sai số với
+giả thuyết và đối thuyết là:
+
+\- $H_0:$ Phần dư độc lập
+
+\- $H_1:$ Phần dư không độc lập
+
+```{r}
+car::durbinWatsonTest(ols_aic)
+```
+
+**Nhận xét:**
+
+\- D-W Statistic = 2.0275, gần 2$\to$ mức độ rất nhẹ.
+
+\- p-value \> 0.05: không bác bỏ $H_0$, nghĩa là **phần dư độc lập** với
+mức ý nghĩa 5%.
+
+Đối với việc không thỏa kiểm định phương sai đồng nhất, ta sử dụng
+phương pháp ước lượng sai số chuẩn vững **(Robust Standard Errors)** cho
+mô hình để xem độ tin cậy thật sự của mô hình. Phương pháp này không làm
+thay đổi hệ số hồi quy mà chỉ cho ra pvalue thật sự của các biến, tránh
+trường hợp mô hình đánh giá quá cao ý nghĩa của 1 số biến. Ngoài ra
+phương pháp này không chịu ảnh hưởng khi mô hình vi phạm kiểm định
+phương sai đồng nhất.
+
+```{r echo=FALSE, fig.align='center', fig.width=10, fig.height=3, out.width="75%", crop=TRUE}
+
+library(lmtest)
+library(sandwich)
+library(knitr)
+
+# Robust coeftest
+ct <- coeftest(ols_aic, vcov = vcovHC(ols_aic, type = "HC3"))
+
+ct_df <- data.frame(
+  Variable = rownames(ct),
+  Estimate = ct[, "Estimate"],
+  p_value  = ct[, "Pr(>|t|)"],
+  row.names = NULL
+)
+
+kable(
+  ct_df,
+  digits = 4,
+  caption = "Robust Coefficient Estimates (HC3)"
+)
+
+
+```
+
+Sau khi kiểm tra bằng **Robust coeftest,** việc p-value của các biến khi
+áp dụng phương pháp trên rất bé cho thấy mô hình ước lượng hệ số rất ổn
+định và chiều ảnh hưởng của các biến đều không đổi, mỗi một biến đều có
+ý nghĩa thống kê rất cao (p-value rất nhỏ). Vậy nên mô hình này vẫn có
+độ tin cậy cao.
+
+**Kết luận chung**: Mô hình cuối cùng được lựa chọn theo tiêu chí AIC
+thỏa giả định tuyến tính, phần dư độc lập. Các kiểm định cho thấy phần
+dư không tuân theo phân phối chuẩn và tồn tại phương sai không đồng nhất
+có thể xuất phát từ sự khác biệt hành vi giữa các nhóm học sinh, với cỡ
+mẫu lỡn, các kiểm định này phát hiện hiện tượng này rõ hơn. Do đó,
+nghiên cứu sử dụng sai số chuẩn robust để đảm bảo suy luận thống kê đáng
+tin cậy. Mô hình vẫn phù hợp cho mục tiêu giải thích và dự đoán.
+
+# 6. Ý nghĩa mô hình:
+
+**- Biến nỗ lực học tập:**
+
+-   **Hours_Studied (+0.48% điểm số / 1 giờ học)**: p \< 0.001 Số giờ
+    học có tác động tích cực mạnh và có ý nghĩa thống kê đến điểm thi,
+    học nhiều hơn liên quan đến kết quả tốt hơn. Nhiều nghiên cứu cho
+    thấy học sinh dành nhiều thời gian tự học có điểm thi cao hơn, ví dụ
+    theo OECD (2019), trung bình học sinh học trên 2 giờ mỗi ngày ngoài
+    giờ lên lớp có thành tích học tập cao hơn 15–20% so với những học
+    sinh học ít hơn.
+
+-   **Attendance (+0.30% điểm số / 1% tăng chuyên cần)**: Tỷ lệ chuyên
+    cần là một trong những yếu tố quan trọng nhất, đi học đầy đủ giúp
+    cải thiện đáng kể điểm số. Hệ số t-value rất cao cho thấy đây là yếu
+    tố ổn định nhất. Việc đi học đầy đủ giúp học sinh tiếp thu kiến thức
+    một cách có hệ thống, các buổi đi học trước có thể xây dựng nền tảng
+    kiến thức cho các buổi sau, việc nghỉ học có tác động tiêu cực dây
+    chuyền cho các buổi sau. Theo nghiên cứu của Cooper et al. (1996),
+    tỉ lệ chuyên cần cao có mối quan hệ mạnh với thành tích học tập, đặc
+    biệt trong các môn toán và khoa học.
+
+-   **Tutoring_Sessions (+0.75% điểm số / 1 buổi học thêm)**: Việc tham
+    gia các buổi học thêm có liên hệ tích cực với điểm thi, cho thấy vai
+    trò hỗ trợ của kèm cặp học tập. Trên thực tế học phụ đạo là các giải
+    quyết nhanh các kiến thức bị vướng mắc dưới sự hỗ trợ của giáo viên.
+    Nên đi học thêm có thể cải thiện điểm số là thực tế.
+
+-   **Motivation_Level (Low: -1.64% điểm số so với High, Medium: -0.84%
+    điểm số so với High)**: Học sinh có mức động lực thấp hoặc trung
+    bình đạt điểm thấp hơn đáng kể so với nhóm động lực cao. Động lực
+    giúp rất nhiều trong việc học, nếu có động lực thì học sinh sẽ chủ
+    động tiếp thu kiến thức nhanh hơn và tốt hơn.
+
+-   **Previous_Scores (+0.07% điểm số / 1 điểm kỳ trước):** Thành tích
+    học tập trước đây là chỉ báo mạnh cho kết quả hiện tại, phản ánh
+    năng lực học tập tương đối ổn định của học sinh. Điểm số kỳ thi
+    trước cứ tăng thì kỳ thi này cũng tăng lên. Có thể thấy người học
+    giỏi từ trước có xu hướng giữ vững phong độ.
+
+-   **Physical_Activity (+0.31% điểm số / 1 giờ tăng hoạt động)**: Hoạt
+    động thể chất có liên hệ tích cực với điểm thi, có thể phản ánh sức
+    khỏe và tinh thần tốt hơn. Mặc dù t-value thấp nhưng trong mô hình
+    tổng thể biến này lại có ý nghĩa thống kê lớn. Có thể chứng minh
+    rằng sức khỏe thể chất cũng là một "điều kiện cần" để bộ não hoạt
+    động tốt hơn.
+
+**- Biến về gia đình và môi trường:**
+
+-   **Peer_Influence (Positive: +1.54% điểm số so với Negative, Neutral:
+    +0.79% điểm số so với Negative)**: Ảnh hưởng tích cực từ bạn bè gắn
+    liền với kết quả học tập tốt hơn, trong khi ảnh hưởng trung tính
+    cũng tốt hơn tiêu cực. Môi trường bạn bè tích cực làm thúc đẩy sự
+    cạnh tranh lành mạnh và hỗ trợ lần nhau trong học tập để các học
+    sinh cùng tiến bộ.
+
+-   **Family_Income (Low: -1.66% điểm số so với High, Medium: -0.87%
+    điểm số so với High)**: Thu nhập gia đình liên quan đến điểm thi, ở
+    nhóm Low và Medium so với nhóm thu nhập cao thì nhóm có ba mẹ thu
+    nhập cao có xu hướng cao điểm hơn. Rõ ràng trong thực tế khi nền
+    tàng gia đình tốt thì đồng nghĩa khả năng chi trả cho dinh dưỡng,
+    sức khỏe và các điều kiện học tập tốt hơn so với gia định có mức thu
+    nhập thấp hơn, đồng thời thì thường những gia đình giàu có thường sẽ
+    đồng hành cùng con trong học tập cùng các hoạt động mà không phải lo
+    lắng nhiều nên xu hướng thu nhập gia định cũng ảnh hưởng tích cực
+    đến năng lực học tập của học sinh.
+
+-   ***Parental_Involvement (Low: -2.90% điểm số so với High, Medium:
+    -1.57% điểm số so với High*** **)**: Mức độ tham gia thấp hơn của
+    phụ huynh liên quan đến điểm thi thấp hơn so với nhóm tham gia cao.
+    Với những học sinh có sự đôn đốc và hỗ trợ tinh thần của gia đình có
+    thể tạo ra một môi trường tốt giúp học sinh duy trì tập trung phát
+    triển tư duy và năng lực học tập.
+
+-   **Parental_Education_Level**:
+
+    -   High School (−, \*\*\*): thấp hơn nhóm tham chiếu **(-0.76% điểm
+        số so với nhóm College)**.
+
+    -   Postgraduate (+, \*\*\*): cao hơn nhóm tham chiếu **(+0.7% điểm
+        số so với nhóm College)**.
+
+=\> Trình độ học vấn của phụ huynh có vai trò rõ ràng. Phụ huynh có
+trình độ cao thường có các phương pháp hướng dẫn và hỗ trợ học tập cho
+con tốt hơn.
+
+-   **Access_to_Resources (Low: -3.02% điểm số so với High, Medium:
+    -1.47% điểm số so với High)**: Thiếu tài nguyên học tập làm giảm
+    đáng kể kết quả học tập (mức độ tiếp cận tài liệu học tập nhóm Low
+    và nhóm Medium thấp hơn so với nhóm High). Thiếu hụt tài nguyên học
+    tập có thể là rào cản lớn trong việc trau dồi kiến thức.
+
+-   **Internet_Access** **(yes: +1.39% điểm số so với No)**: So với nhóm
+    No thì nhóm Yes có điểm số cao hơn. Tức là nếu không có Internet thì
+    kết quả học tập sẽ kém hơn. Trong bối cảnh học trực tuyến hiện nay,
+    việc có Internet và tài liệu học tập đầy đủ giúp học sinh tiếp cận
+    kiến thức hiệu quả hơn, minh chứng từ các báo cáo của UNESCO về học
+    tập từ xa (2020).
+
+-   **Teacher_Quality** **(Low: -1.57% điểm số so với High, Medium:
+    -0.82% so với High):** so với nhóm High thì nhóm Low và Medium thấp
+    hơn. Với một giáo viên tốt thì không chỉ dạy kiến thức khô khan mà
+    còn khơi gợi, truyền cảm hứng học tập cho học sinh, chỉ dạy các
+    phương pháp học, phương pháp tư duy giúp học sinh tiến bộ nhanh hơn.
+
+Các nghiên cứu về giáo dục như từ UNICEF hoặc NCES (Mỹ) đều cho thấy mức
+độ tham gia và trình độ học vấn của phụ huynh, cũng như thu nhập gia
+đình, có ảnh hưởng đáng kể tới điểm số và thành tích học tập của con
+cái.
+
+**- Biến cá nhân và ngoại khóa:**
+
+-   **Learning_Disabilities (yes: -1.33% điểm số so với No):** so với
+    nhóm No thì nhóm Yes thấp hơn. Điều này rất thực tế, tức là nếu bị
+    rối loạn học tập thì khả năng học tập của học sinh sẽ bị hạn chế cho
+    nên điểm số của học sinh cũng giảm theo.
+
+-   **Distance_from_Home (Near: +0.62% điểm số so với Far, moderate:
+    +1.44% điểm số so với Far)**: Nhóm nhà gần (Near) và nhóm Moderate
+    có điểm số cao hơn so với nhóm Far. Nhà xa có thể gây bất tiện trong
+    việc đi học, làm tốn thêm thời gian nghỉ ngơi và năng lượng cho việc
+    đi học dẫn đến mệt mỏi nên chất lượng học tập cũng giảm đi.
+
+-   **Extracurricular_Activities (Yes: +0.87% điểm số so với No):** Mặc
+    dù hoạt động ngoại khóa làm giảm thời gian học trực tiếp nhưng kết
+    quả hồi quy cho thấy học sinh tham gia hoạt động ngoại khóa có điểm
+    thi cao hơn một cách có ý nghĩa thống kê. Điều này có thể phản ánh
+    các đặc điểm cá nhân tích cực như khả năng quản lý thời gian, động
+    lực học tập và mức độ gắn kết với môi trường học đường. Kết quả này
+    vẫn giữ ý nghĩa thống kê sau khi đã kiểm soát các yếu tố học tập,
+    gia đình và cá nhân khác trong mô hình.
+
+Các nghiên cứu cho thấy: “Motivation và engagement của học sinh có liên
+quan mật thiết với kết quả học tập” (Ryan & Deci, 2000). “Hoạt động
+ngoại khóa giúp phát triển kỹ năng quản lý thời gian, khả năng phối hợp
+nhóm, tăng động lực học tập” (Feldman & Matjasko, 2005).
+
+# 7.Dự báo
+
+```{r echo=FALSE, fig.align='center', fig.width=10, fig.height=3.5, out.width="80%", crop=TRUE}
+# Tạo biến log
+train$Exam_Score_log <- log(train$Exam_Score) 
+test$Exam_Score_log  <- log(test$Exam_Score)  
+#  Build OLS Stepwise AIC (giữ nguyên tất cả factor) 
+ols_full <- lm(Exam_Score_log ~ ., data = train %>% select(-Exam_Score)) 
+ols_aic  <- stepAIC(ols_full, direction = "both", trace = FALSE)  
+# Chuẩn bị test_df: giữ nguyên factor, bỏ biến gốc 
+test_df <- test %>% select(-Exam_Score)  
+# Ép factor levels giống train 
+factor_vars <- names(Filter(is.factor, train)) 
+for(v in factor_vars){   
+test_df[[v]] <- factor(test_df[[v]], levels = levels(train[[v]])) } 
+#  Dự đoán trên log  
+pred_log <- predict(ols_aic, newdata = test_df) 
+# RMSE & MAE toàn bộ log 
+rmse_log <- rmse(test$Exam_Score_log, pred_log) 
+mae_log  <- mae(test$Exam_Score_log, pred_log) 
+cat("RMSE log =", round(rmse_log, 4), "\n") 
+cat("MAE log  =", round(mae_log, 4), "\n") 
+# RMSE tail log (>80)  
+tail_idx <- which(test$Exam_Score > 80) 
+rmse_tail_log <- rmse(test$Exam_Score_log[tail_idx], pred_log[tail_idx]) 
+cat("RMSE tail (>80) log =", round(rmse_tail_log, 4), "\n") 
+# Vẽ biểu đồ Actual vs Predicted trên thang gốc 
+pred_score <- exp(pred_log) 
+plot_df <- data.frame(   Actual    = test$Exam_Score,   Predicted = pred_score )  
+
+ggplot(plot_df, aes(x = Actual, y = Predicted)) +   geom_point(color = "blue", alpha = 0.6) +   geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +   labs(     title = "Actual vs Predicted Exam Score",     x = "Actual Exam Score",     y = "Predicted Exam Score"   ) +   theme_minimal(base_size = 12)
+```
+
+**Nhìn vào số liệu**:
+
+-   **Độ chính xác:** Các chỉ số sai số cực thấp với $MAE \approx 0.007$
+    và $RMSE \approx 0.023$. Do đang ở thang đo log, những con số này
+    phản ánh sai số dự báo trung bình chỉ dao động trong khoảng dưới
+    **1%** so với giá trị thực tế, cho thấy độ chính xác thực tế rất
+    cao.
+-   **Độ ổn định:** Việc $MAE$ nhỏ hơn $RMSE$ cho thấy phân phối sai số
+    tương đối tập trung, mô hình hoạt động ổn định trên đại bộ phận dữ
+    liệu. Các chỉ số trên tập kiểm tra duy trì sự tương đồng với tập
+    huấn luyện, khẳng định mô hình không bị quá khớp (overfitting) và có
+    khả năng tổng quát hóa tốt.
+
+Mặc dù các chỉ số tổng thể rất tốt, mô hình bộc lộ hạn chế rõ rệt khi dự
+báo nhóm học sinh có năng lực xuất sắc:
+
+-   **Sai số nhóm điểm cao:** Chỉ số $RMSE_{tail > 80} \approx 0.326$
+    cao gấp hơn **14 lần** so với $RMSE$ tổng thể ($0.023$). Điều này
+    chứng minh rằng sai số tập trung chủ yếu ở nhóm học sinh có điểm
+    thực tế trên 80.
+
+**Nhìn vào biểu đồ**:
+
+-   **Vùng dự báo tốt:** Trong khoảng giá trị thực tế từ $50$ đến $80$,
+    các điểm bám rất sát đường chéo màu đỏ, cho thấy mô hình dự báo khá
+    chính xác cho nhóm học sinh trung bình.
+
+-   **Vùng "gãy" mô hình:** Khi giá trị thực tế vượt ngưỡng $80$ điểm,
+    các điểm dữ liệu **rơi tự do xuống dưới đường đỏ**.
+
+-   **Kết luận:** Mô hình bị lỗi **đánh giá thấp (Underestimation)**
+    nghiêm trọng ở nhóm học sinh giỏi. Dù điểm thực tế rất cao ($80$),
+    mô hình vẫn chỉ dự báo loanh quanh mức trung bình ($65$). Sai số tại
+    đây cực lớn về mặt tỷ lệ phần trăm thực tế.
+
+# 8. Kết luận và đề xuất:
+
+## 8.1 Kết luận:
+
+**Đánh giá mô hình và độ tin cậy:** Mô hình dựa trên tiêu chí AIC được
+lựa chọn làm mô hình cuối cùng với R² = 76%, chứng tỏ khả năng giải
+thích dữ liệu rất tốt. Kiểm định các giả định cho thấy mô hình thỏa mãn
+tính tuyến tính và độc lập của sai số, nhưng vi phạm giả định phân phối
+chuẩn và phương sai đồng nhất. Tuy nhiên, bằng việc sử dụng ước lượng
+robust, các hệ số hồi quy vẫn cho thấy ý nghĩa thống kê rất cao (p-value
+\< 0.001), khẳng định các mối quan hệ được phát hiện là đáng tin cậy và
+vững chắc. So sánh và các phương pháp cải thiện: So sánh với các mô hình
+phức tạp hơn như Ridge, Lasso và Elastic Net, mô hình AIC Stepwise cho
+hiệu suất dự báo tương đương trên tập kiểm tra nhưng lại ưu việt về tính
+đơn giản và khả năng diễn giải. Một hạn chế được phát hiện là mô hình có
+xu hướng đánh giá thấp điểm số của nhóm học sinh xuất sắc (điểm \> 80).
+Chúng em đã thử nghiệm hai phương pháp cải thiện chính:
+
+-   Hồi quy có trọng số (Weighted Regression) để ưu tiên học từ nhóm
+    điểm cao, và
+
+-   Bổ sung các biến phi tuyến.
+
+Kết quả cho thấy các phương pháp này chỉ cải thiện được một phần, do
+**tỷ lệ học sinh xuất sắc trong dữ liệu quá thấp (0.66%)** để mô hình
+học được các đặc trưng riêng biệt của nhóm này.
+
+Kết quả phân tích chỉ rõ ba nhóm yếu tố then chốt ảnh hưởng đến thành
+tích học sinh, theo thứ tự tác động:
+
+-   Nỗ lực cá nhân (thời gian học, chuyên cần, động lực) là quan trọng
+    nhất;
+
+-   Hỗ trợ từ gia đình và môi trường (sự tham gia của phụ huynh, điều
+    kiện kinh tế, tài nguyên học tập, chất lượng giáo viên) đóng vai trò
+    nền tảng;
+
+-   Các yếu tố xã hội và cá nhân (ảnh hưởng của bạn bè, hoạt động ngoại
+    khóa) có tác động bổ trợ. Để nâng cao thành tích chung, chính sách
+    nên ưu tiên can thiệp vào các yếu tố thuộc nhóm 1 và 2.
+
+**Đề xuất sử dụng mô hình:** Mô hình dựa trên tiêu chí AIC là một công
+cụ hữu ích để phân tích tác động và đánh giá xu hướng tác động của các
+yếu tố khác nhau lên điểm thi, từ đó hỗ trợ ra quyết định chính sách
+giáo dục dựa trên bằng chứng. Tuy nhiên, cần thận trọng khi sử dụng mô
+hình để dự báo điểm số chính xác cho từng cá nhân, đặc biệt là những học
+sinh xuất sắc, vì mô hình có xu hướng đánh giá thấp kết quả của nhóm
+này. Mô hình phù hợp nhất cho việc hoạch định chính sách vĩ mô và đánh
+giá tác động của các chương trình can thiệp trên quy mô lớn.
+
+**Độ tin cậy:**
+
+-   Mô hình **giải thích tốt các yếu tố quan trọng**, hệ số phù hợp với
+    lý thuyết và thực tế.
+
+-   Mô hình có thể được **sử dụng để dự đoán, phân tích và hỗ trợ ra
+    quyết định giáo dục**: Ví dụ, nhà trường có thể tập trung vào tăng
+    động lực, cải thiện tỷ lệ chuyên cần, cung cấp tài nguyên học tập và
+    khuyến khích hoạt động ngoại khóa.
+
+Mô hình giả định **mối quan hệ log-linear**, nên những tương tác phi
+tuyến phức tạp có thể chưa được thể hiện hoàn toàn.
+
+Một số outlier hoặc các yếu tố ngoài dữ liệu hiện có (ví dụ cảm xúc, sức
+khỏe tinh thần) không được đưa vào mô hình, nhưng **phần lớn dữ liệu đã
+được giải thích (\~76%)**.
+
+**Kết luận:** Mô hình OLS log-transform **giải thích tốt, có độ tin cậy
+cao và hợp lý với dữ liệu thực tế**. Các biến nỗ lực cá nhân, gia đình
+và môi trường xã hội là yếu tố chính, các biến cá nhân & ngoại khóa bổ
+sung giúp mô hình toàn diện, mặc dù có vài giới hạn nhỏ về phi tuyến hay
+yếu tố ngoài dữ liệu, cho thấy mô hình vẫn là công cụ hiệu quả để phân
+tích và hỗ trợ ra quyết định giáo dục.
+
+## 8.2. Đề xuất:
+
+Sau khi tìm hiểu thì có 2 phương pháp xử lí vấn đề underestimate tail
+nặng như này thì có 2 phương pháp Quantile regression (QR) và Weight
+nhưng với bộ dữ liệu này thì số học sinh trên 80 điểm trong tổng bộ dữ
+liệu chỉ chiếm 0.66% là quá ít, nếu dùng QR thì tail cần dự báo không đủ
+dữ liệu nên kết quả không ổn định cho nên cách hợp lí hơn là dùng
+**Weighting và kết hợp với log_transformation**.
+
+**Weight kết hợp với log(Exam_Score):**
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+library(dplyr)
+library(ggplot2)
+
+# Tạo weight: tăng trọng số cho điểm thi cao (>80)
+train <- train %>%
+  mutate(
+    w_score = ifelse(Exam_Score_log > log(80), 20, 1)
+  )
+
+
+#  Xác định biến dự đoán (loại bỏ Exam_Score, Exam_Score_log, w_score)
+
+vars_model <- setdiff(names(train), c("Exam_Score", "Exam_Score_log", "w_score"))
+
+# Huấn luyện Weighted Linear Regression
+wls_model <- lm(
+  formula = as.formula(paste("Exam_Score_log ~", paste(vars_model, collapse = " + "))),
+  data = train,
+  weights = w_score
+)
+
+#  Dự đoán trên test set
+
+# Tạo tạm cột w_score để tránh lỗi predict
+test$w_score <- 1
+
+# Dự đoán log
+test$pred_log <- predict(wls_model, newdata = test[, vars_model])
+
+# Chuyển về điểm gốc
+test$pred_orig <- exp(test$pred_log)
+
+# -----------------------------
+# 5. Scatter plot: điểm thật vs dự đoán (gốc)
+# -----------------------------
+ggplot(test, aes(x = Exam_Score, y = pred_orig)) +
+  geom_point(alpha = 0.6, color = "darkgreen") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "WLR vs Log Transformation",
+    x = "Điểm thật",
+    y = "Điểm dự đoán"
+  ) +
+  theme_minimal()
+# Tính RMSE
+# RMSE tổng thể
+rmse_total <- sqrt(mean((test$Exam_Score - test$pred_orig)^2))
+
+# RMSE tail >80
+rmse_tail <- test %>%
+  filter(Exam_Score > 80) %>%
+  summarise(rmse = sqrt(mean((Exam_Score - pred_orig)^2))) %>%
+  pull(rmse)
+
+cat("RMSE tổng thể:", round(rmse_total, 3), "\n")
+cat("RMSE tail >80:", round(rmse_tail, 3), "\n")
+
+```
+
+Việc áp dụng **Weighted Linear Regression** giúp **giảm RMSE** ở các học
+sinh có điểm cao (tail), so với mô hình log-transformed ban đầu. Tuy
+nhiên, do các học sinh ở tail chiếm tỷ lệ rất thấp (0.65% tổng dữ liệu),
+mô hình tuyến tính vẫn đánh giá thấp các điểm số cao, nên RMSE tail vẫn
+lớn hơn nhiều so với RMSE tổng thể
+
+**Thêm biến phi tuyến:**
+
+Vì nhận thấy những mô hình này không dự báo tốt cho các điểm thi cao
+(\>80) nên chúng em sẽ thử mối quan hệ tuyến tính cho mô hình:
+
+```{r echo=FALSE, fig.align='center', fig.width=10, fig.height=3, out.width="75%", crop=TRUE}
+# Thêm biến bình phương của Hours_Studied và Sleep_Hours
+train$Hours_Studied2 <- train$Hours_Studied^2
+train$Sleep_Hours2   <- train$Sleep_Hours^2
+
+test$Hours_Studied2  <- test$Hours_Studied^2
+test$Sleep_Hours2    <- test$Sleep_Hours^2
+
+# Mô hình phi tuyến
+ols_nonlinear <- lm(
+  Exam_Score_log ~ . + Hours_Studied2 + Sleep_Hours2-Exam_Score-w_score,
+  data = train
+)
+summary(ols_nonlinear)
+```
+
+Việc bổ sung các thành phần phi tuyến (bậc 2, bậc 3) không mang lại ý
+nghĩa thống kê ($p-value > 0.05$), cho thấy mô hình tuyến tính hóa qua
+hàm Log đã phản ánh tương đối đầy đủ bản chất mối quan hệ trong dữ liệu
+mà không cần thêm sự phức tạp hóa.
+
+**Kết luận chung:** Qua các phương pháp cải thiện mô hình ta thấy
+
+Bộ dữ liệu **có phân phối điểm thi khá lệch**, với số học sinh điểm cao
+rất ít. Điều này gây khó khăn cho mọi mô hình tuyến tính trong việc dự
+báo tail.
+
+Mặc dù các kỹ thuật như Log-transform hay Weighting đã cải thiện đáng kể
+sai số tổng thể, mô hình vẫn gặp khó khăn trong việc dự báo nhóm học
+sinh có điểm số cực cao.
+
+Bộ dữ liệu này phù hợp với mô hình tuyến tính cho phần lớn học sinh,
+nhưng không đủ dữ liệu tail để cải thiện dự báo cho các điểm số cao,
+chứng tỏ bộ dữ liệu này còn thiếu các yếu tố tiềm ẩn để có thể đánh giá
+được học sinh giỏi đạt điểm cao.
