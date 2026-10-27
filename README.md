@@ -1,6 +1,6 @@
 ## 🚀 Featured Projects
 
-### 1. [Vietnam Stock Market Analysis & Portfolio Construction](link-den-repo-1)
+### 1. [Vietnam Stock Market Analysis & Portfolio Construction]([link-den-repo-1](https://github.com/khanhvy281100-eng/quantitative-finance-projects/blob/main/Vietnam_stock.ipynb))
 - **Tech stack:** Python (Pandas, NumPy, Scikit-Learn)
 - Phân tích dữ liệu giá 30 cổ phiếu Việt Nam, tính toán lợi nhuận log và phân tích tương quan.
 - Xây dựng Eigen-portfolios bằng PCA và đánh giá hiệu quả đầu tư so với danh mục Equal-weight.
